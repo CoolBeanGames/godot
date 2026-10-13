@@ -31,6 +31,7 @@
 #include "register_editor_types.h"
 
 #include "core/config/engine.h"
+#include "core/config/project_settings.h"
 #include "core/io/resource_loader.h"
 #include "core/io/resource_saver.h"
 #include "core/object/class_db.h"
@@ -47,7 +48,6 @@
 #include "editor/editor_string_names.h"
 #include "editor/editor_undo_redo_manager.h"
 #include "editor/export/editor_export_platform.h"
-#include "editor/export/editor_export_platform_apple_embedded.h"
 #include "editor/export/editor_export_platform_extension.h"
 #include "editor/export/editor_export_platform_pc.h"
 #include "editor/export/editor_export_plugin.h"
@@ -177,7 +177,6 @@ void register_editor_types() {
 	GDREGISTER_CLASS(EditorExportPlugin);
 	GDREGISTER_ABSTRACT_CLASS(EditorExportPlatform);
 	GDREGISTER_ABSTRACT_CLASS(EditorExportPlatformPC);
-	GDREGISTER_ABSTRACT_CLASS(EditorExportPlatformAppleEmbedded);
 	GDREGISTER_CLASS(EditorExportPlatformExtension);
 	GDREGISTER_ABSTRACT_CLASS(EditorExportPreset);
 

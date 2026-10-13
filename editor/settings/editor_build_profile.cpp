@@ -683,9 +683,6 @@ EditorBuildProfile::EditorBuildProfile() {
 		{ "rendering/rendering_device/driver", { "vulkan" } },
 		{ "rendering/rendering_device/driver.windows", { "vulkan" } },
 		{ "rendering/rendering_device/driver.linuxbsd", { "vulkan" } },
-		{ "rendering/rendering_device/driver.android", { "vulkan" } },
-		{ "rendering/rendering_device/driver.ios", { "vulkan" } },
-		{ "rendering/rendering_device/driver.macos", { "vulkan" } },
 		{ "rendering/rendering_device/fallback_to_vulkan", { true } },
 	};
 	build_option_settings.insert(BUILD_OPTION_VULKAN, settings_vulkan);
@@ -694,17 +691,12 @@ EditorBuildProfile::EditorBuildProfile() {
 		{ "rendering/rendering_device/driver", { "d3d12" } },
 		{ "rendering/rendering_device/driver.windows", { "d3d12" } },
 		{ "rendering/rendering_device/driver.linuxbsd", { "d3d12" } },
-		{ "rendering/rendering_device/driver.android", { "d3d12" } },
-		{ "rendering/rendering_device/driver.ios", { "d3d12" } },
-		{ "rendering/rendering_device/driver.macos", { "d3d12" } },
 		{ "rendering/rendering_device/fallback_to_d3d12", { true } },
 	};
 	build_option_settings.insert(BUILD_OPTION_D3D12, settings_d3d12);
 
 	HashMap<String, LocalVector<Variant>> settings_metal = {
 		{ "rendering/rendering_device/driver", { "metal" } },
-		{ "rendering/rendering_device/driver.ios", { "metal" } },
-		{ "rendering/rendering_device/driver.macos", { "metal" } },
 	};
 	build_option_settings.insert(BUILD_OPTION_METAL, settings_metal);
 

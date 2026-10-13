@@ -693,7 +693,7 @@ namespace GodotTools
                 if (IsInstanceValid(_exportPluginWeak))
                 {
                     // We need to dispose our export plugin before the editor destroys EditorSettings.
-                    // Otherwise, if the GC disposes it at a later time, EditorExportPlatformAndroid
+                    // Otherwise, if the GC disposes it at a later time, the export platform
                     // will be freed after EditorSettings already was, and its device polling thread
                     // will try to access the EditorSettings singleton, resulting in null dereferencing.
                     (_exportPluginWeak.GetRef().AsGodotObject() as ExportPlugin)?.Dispose();

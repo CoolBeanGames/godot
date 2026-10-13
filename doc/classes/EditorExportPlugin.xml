@@ -111,7 +111,7 @@
 			<description>
 				Virtual method to be overridden by the user. This is called to retrieve the set of Android dependencies provided by this plugin. Each returned Android dependency should have the format of an Android remote binary dependency: [code]org.godot.example:my-plugin:0.0.0[/code]
 				For more information see [url=https://developer.android.com/build/dependencies?agpversion=4.1#dependency-types]Android documentation on dependencies[/url].
-				[b]Note:[/b] Only supported on Android and requires [member EditorExportPlatformAndroid.gradle_build/use_gradle_build] to be enabled.
+				[b]Note:[/b] Only supported when exporting for Android with Gradle builds enabled.
 			</description>
 		</method>
 		<method name="_get_android_dependencies_maven_repos" qualifiers="virtual const">
@@ -122,7 +122,7 @@
 				Virtual method to be overridden by the user. This is called to retrieve the URLs of Maven repositories for the set of Android dependencies provided by this plugin.
 				For more information see [url=https://docs.gradle.org/current/userguide/dependency_management.html#sec:maven_repo]Gradle documentation on dependency management[/url].
 				[b]Note:[/b] Google's Maven repo and the Maven Central repo are already included by default.
-				[b]Note:[/b] Only supported on Android and requires [member EditorExportPlatformAndroid.gradle_build/use_gradle_build] to be enabled.
+				[b]Note:[/b] Only supported when exporting for Android with Gradle builds enabled.
 			</description>
 		</method>
 		<method name="_get_android_libraries" qualifiers="virtual const">
@@ -132,7 +132,7 @@
 			<description>
 				Virtual method to be overridden by the user. This is called to retrieve the local paths of the Android libraries archive (AAR) files provided by this plugin.
 				[b]Note:[/b] Relative paths [b]must[/b] be relative to Godot's [code]res://addons/[/code] directory. For example, an AAR file located under [code]res://addons/hello_world_plugin/HelloWorld.release.aar[/code] can be returned as an absolute path using [code]res://addons/hello_world_plugin/HelloWorld.release.aar[/code] or a relative path using [code]hello_world_plugin/HelloWorld.release.aar[/code].
-				[b]Note:[/b] Only supported on Android and requires [member EditorExportPlatformAndroid.gradle_build/use_gradle_build] to be enabled.
+				[b]Note:[/b] Only supported when exporting for Android with Gradle builds enabled.
 			</description>
 		</method>
 		<method name="_get_android_manifest_activity_element_contents" qualifiers="virtual const">
@@ -141,7 +141,7 @@
 			<param index="1" name="debug" type="bool" />
 			<description>
 				Virtual method to be overridden by the user. This is used at export time to update the contents of the [code]activity[/code] element in the generated Android manifest.
-				[b]Note:[/b] Only supported on Android and requires [member EditorExportPlatformAndroid.gradle_build/use_gradle_build] to be enabled.
+				[b]Note:[/b] Only supported when exporting for Android with Gradle builds enabled.
 			</description>
 		</method>
 		<method name="_get_android_manifest_application_element_contents" qualifiers="virtual const">
@@ -150,7 +150,7 @@
 			<param index="1" name="debug" type="bool" />
 			<description>
 				Virtual method to be overridden by the user. This is used at export time to update the contents of the [code]application[/code] element in the generated Android manifest.
-				[b]Note:[/b] Only supported on Android and requires [member EditorExportPlatformAndroid.gradle_build/use_gradle_build] to be enabled.
+				[b]Note:[/b] Only supported when exporting for Android with Gradle builds enabled.
 			</description>
 		</method>
 		<method name="_get_android_manifest_element_contents" qualifiers="virtual const">
@@ -159,7 +159,7 @@
 			<param index="1" name="debug" type="bool" />
 			<description>
 				Virtual method to be overridden by the user. This is used at export time to update the contents of the [code]manifest[/code] element in the generated Android manifest.
-				[b]Note:[/b] Only supported on Android and requires [member EditorExportPlatformAndroid.gradle_build/use_gradle_build] to be enabled.
+				[b]Note:[/b] Only supported when exporting for Android with Gradle builds enabled.
 			</description>
 		</method>
 		<method name="_get_customization_configuration_hash" qualifiers="virtual required const">

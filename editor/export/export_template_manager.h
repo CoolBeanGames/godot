@@ -109,16 +109,10 @@ class ExportTemplateManager : public AcceptDialog {
 		LINUX_ARM32,
 		LINUX_ARM64,
 
-		MACOS,
-
 		WEB,
 		WEB_EXTENSIONS,
 		WEB_NOTHREADS,
 		WEB_EXTENSIONS_NOTHREADS,
-
-		ANDROID,
-
-		IOS,
 
 		ICU_DATA,
 	};
@@ -126,10 +120,7 @@ class ExportTemplateManager : public AcceptDialog {
 	enum class PlatformID {
 		WINDOWS,
 		LINUX,
-		MACOS,
 		WEB,
-		ANDROID,
-		IOS,
 		COMMON,
 	};
 
@@ -282,15 +273,6 @@ protected:
 	void _notification(int p_what);
 
 public:
-	static String get_android_build_directory(const Ref<EditorExportPreset> &p_preset);
-	static String get_android_source_zip(const Ref<EditorExportPreset> &p_preset);
-	static String get_android_template_identifier(const Ref<EditorExportPreset> &p_preset);
-
-	bool is_android_template_installed(const Ref<EditorExportPreset> &p_preset);
-	bool can_install_android_template(const Ref<EditorExportPreset> &p_preset);
-	Error install_android_template(const Ref<EditorExportPreset> &p_preset);
-	Error install_android_template_from_file(const String &p_file, const Ref<EditorExportPreset> &p_preset);
-
 	void popup_manager();
 	bool is_downloading() const;
 	void stop_download();

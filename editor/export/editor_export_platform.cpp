@@ -224,129 +224,10 @@ bool EditorExportPlatform::fill_log_messages(RichTextLabel *p_log, Error p_err) 
 	return has_messages;
 }
 
-Error EditorExportPlatform::_extract_android_assets(const String &p_bundle_path, String &r_pck_path, String &r_temp_dir) {
-	Error err = OK;
-
-	Ref<FileAccess> io_fa;
-	zlib_filefunc_def io = zipio_create_io(&io_fa);
-	unzFile zip_file = unzOpen2(p_bundle_path.utf8().get_data(), &io);
-	if (!zip_file) {
-		return ERR_FILE_CANT_OPEN;
-	}
-
-	const char *pck_name = "assets.sparsepck";
-	String pck_base_dir;
-
-	int ret = unzGoToFirstFile(zip_file);
-	while (ret == UNZ_OK) {
-		unz_file_info64 file_info = {};
-		char file_name_buf[16384];
-		ret = unzGetCurrentFileInfo64(zip_file, &file_info, file_name_buf, sizeof(file_name_buf), nullptr, 0, nullptr, 0);
-		if (ret != UNZ_OK) {
-			break;
-		}
-
-		String file_name = String::utf8(file_name_buf);
-		if (file_name.ends_with(pck_name)) {
-			pck_base_dir = file_name.trim_suffix(pck_name);
-			break;
-		}
-
-		ret = unzGoToNextFile(zip_file);
-	}
-
-	if (ret != UNZ_OK || pck_base_dir.is_empty()) {
-		unzClose(zip_file);
-		return ERR_FILE_UNRECOGNIZED;
-	}
-
-	Ref<DirAccess> temp_dir = DirAccess::create_temp("export_patch_base", true, &err);
-	if (err != OK) {
-		unzClose(zip_file);
-		return err;
-	}
-
-	String temp_dir_path = temp_dir->get_current_dir();
-
-	ret = unzGoToFirstFile(zip_file);
-	while (ret == UNZ_OK) {
-		unz_file_info64 zip_file_info = {};
-		char file_name_buf[16384];
-		if (unzGetCurrentFileInfo64(zip_file, &zip_file_info, file_name_buf, sizeof(file_name_buf), nullptr, 0, nullptr, 0) != UNZ_OK) {
-			err = ERR_FILE_CORRUPT;
-			break;
-		}
-
-		String file_name = String::utf8(file_name_buf);
-		if (!file_name.begins_with(pck_base_dir)) {
-			ret = unzGoToNextFile(zip_file);
-			continue;
-		}
-
-		String file_path_relative = file_name.trim_prefix(pck_base_dir).simplify_path();
-		if (file_path_relative.is_empty()) {
-			ret = unzGoToNextFile(zip_file);
-			continue;
-		}
-
-		String file_output_path = temp_dir_path.path_join(file_path_relative);
-		err = DirAccess::make_dir_recursive_absolute(file_output_path.get_base_dir());
-		if (err != OK) {
-			break;
-		}
-
-		if (unzOpenCurrentFile(zip_file) != UNZ_OK) {
-			err = ERR_FILE_CANT_OPEN;
-			break;
-		}
-
-		LocalVector<uint8_t> uncomp_data;
-		uncomp_data.resize(zip_file_info.uncompressed_size);
-		int read_bytes = unzReadCurrentFile(zip_file, uncomp_data.ptr(), uncomp_data.size());
-		unzCloseCurrentFile(zip_file);
-
-		if (read_bytes < 0 || read_bytes != (int)uncomp_data.size()) {
-			err = ERR_FILE_CANT_READ;
-			break;
-		}
-
-		Ref<FileAccess> temp_file = FileAccess::open(file_output_path, FileAccess::WRITE, &err);
-		if (err != OK) {
-			break;
-		}
-
-		if (!temp_file->store_buffer(uncomp_data.ptr(), uncomp_data.size())) {
-			err = ERR_FILE_CANT_WRITE;
-			break;
-		}
-
-		ret = unzGoToNextFile(zip_file);
-	}
-
-	unzClose(zip_file);
-
-	r_pck_path = temp_dir_path.path_join(pck_name);
-	r_temp_dir = temp_dir_path;
-
-	return err;
-}
-
 Error EditorExportPlatform::_load_patches(const Ref<EditorExportPreset> &p_preset, const Vector<String> &p_patches) {
 	if (!p_patches.is_empty()) {
 		for (const String &path : p_patches) {
 			String pck_path = path;
-
-			if (path.ends_with(".apk") || path.ends_with(".aab")) {
-				String temp_dir;
-				Error err = _extract_android_assets(path, pck_path, temp_dir);
-				if (err != OK) {
-					_unload_patches();
-					add_message(EXPORT_MESSAGE_ERROR, TTR("Patch Creation"), vformat(TTR("Could not extract assets from Android bundle \"%s\", due to error \"%s\"."), path, error_names[err]));
-					return err;
-				}
-
-				patch_temp_dirs.push_back(temp_dir);
-			}
 
 			Error err = PackedData::get_singleton()->add_pack(pck_path, true, 0, _get_script_encryption_key_bytes(p_preset));
 			if (err != OK) {
@@ -362,16 +243,6 @@ Error EditorExportPlatform::_load_patches(const Ref<EditorExportPreset> &p_prese
 
 void EditorExportPlatform::_unload_patches() {
 	PackedData::get_singleton()->clear();
-
-	for (const String &temp_dir : patch_temp_dirs) {
-		Ref<DirAccess> temp_dir_da = DirAccess::open(temp_dir);
-		if (temp_dir_da.is_valid()) {
-			temp_dir_da->erase_contents_recursive();
-			temp_dir_da->remove(temp_dir);
-		}
-	}
-
-	patch_temp_dirs.clear();
 }
 
 Error EditorExportPlatform::_encrypt_and_store_data(Ref<FileAccess> p_fd, const String &p_path, const Vector<uint8_t> &p_data, const Vector<String> &p_enc_in_filters, const Vector<String> &p_enc_ex_filters, const Vector<uint8_t> &p_key, uint64_t p_seed, bool &r_encrypt) {
@@ -2498,9 +2369,7 @@ Vector<String> EditorExportPlatform::gen_export_flags(BitField<EditorExportPlatf
 	String host = EDITOR_GET("network/debug/remote_host");
 	int remote_port = (int)EDITOR_GET("network/debug/remote_port");
 
-	if (get_name() == "Android" && EditorSettings::get_singleton()->has_setting("export/android/use_wifi_for_remote_debug") && EDITOR_GET("export/android/use_wifi_for_remote_debug")) {
-		host = EDITOR_GET("export/android/wifi_remote_debug_host");
-	} else if (p_flags.has_flag(DEBUG_FLAG_REMOTE_DEBUG_LOCALHOST)) {
+	if (p_flags.has_flag(DEBUG_FLAG_REMOTE_DEBUG_LOCALHOST)) {
 		host = "localhost";
 	}
 

@@ -32,7 +32,6 @@
 
 TEST_FORCE_LINK(test_crete_removals)
 
-#include "core/config/project_settings.h"
 #include "core/object/class_db.h"
 #include "core/object/method_bind.h"
 #include "core/object/script_language.h"
@@ -67,7 +66,6 @@ TEST_SUITE("Crete removals") {
 		CHECK_FALSE(ClassDB::class_exists("OpenXRInterface"));
 		CHECK_FALSE(ClassDB::class_exists("OpenXRAction"));
 		CHECK_FALSE(ClassDB::class_exists("OpenXRActionMap"));
-		CHECK_FALSE(ProjectSettings::get_singleton()->has_setting("xr/openxr/enabled"));
 	}
 
 	TEST_CASE("Node replication classes are absent") {
@@ -91,6 +89,24 @@ TEST_SUITE("Crete removals") {
 		}
 		CHECK_FALSE(has_replication_api);
 	}
+
+	TEST_CASE("Mobile and macOS export platforms are absent") {
+		CHECK_FALSE(ClassDB::class_exists("EditorExportPlatformAndroid"));
+		CHECK_FALSE(ClassDB::class_exists("EditorExportPlatformIOS"));
+		CHECK_FALSE(ClassDB::class_exists("EditorExportPlatformVisionOS"));
+		CHECK_FALSE(ClassDB::class_exists("EditorExportPlatformMacOS"));
+		CHECK_FALSE(ClassDB::class_exists("EditorExportPlatformAppleEmbedded"));
+	}
+
+	TEST_CASE("Desktop and web export platforms are present") {
+		CHECK(ClassDB::class_exists("EditorExportPlatformWindows"));
+		CHECK(ClassDB::class_exists("EditorExportPlatformLinuxBSD"));
+		CHECK(ClassDB::class_exists("EditorExportPlatformWeb"));
+	}
+
+	// NOTE: setup()-registered project settings (xr/openxr/*, per-platform
+	// driver overrides) cannot be asserted here: --test runs before Main::setup().
+	// Their absence is verified by the binary string check (see CRETE.md).
 }
 
 } // namespace TestCreteRemovals

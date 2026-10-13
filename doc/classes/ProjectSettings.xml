@@ -338,9 +338,6 @@
 		<member name="application/config/icon" type="String" setter="" getter="" default="&quot;&quot;">
 			Icon used for the project, set when project loads. Exporters will also use this icon as a fallback if necessary.
 		</member>
-		<member name="application/config/macos_native_icon" type="String" setter="" getter="" default="&quot;&quot;">
-			Icon set in [code].icns[/code] format used on macOS to set the game's icon. This is done automatically on start by calling [method DisplayServer.set_native_icon].
-		</member>
 		<member name="application/config/name" type="String" setter="" getter="" default="&quot;&quot;">
 			The project's name. It is used both by the Project Manager and by exporters. The project name can be translated by translating its value in localization files. The window title will be set to match the project name automatically on startup.
 			[b]Note:[/b] Changing this value will also change the user data folder's path if [member application/config/use_custom_user_dir] is [code]false[/code]. After renaming the project, you will no longer be able to access existing data in [code]user://[/code] unless you rename the old folder to match the new project name. See [url=$DOCS_URL/tutorials/io/data_paths.html]Data paths[/url] in the documentation for more information.
@@ -935,20 +932,8 @@
 		<member name="display/display_server/driver" type="String" setter="" getter="">
 			Sets the driver to be used by the display server. This property can not be edited directly, instead, set the driver using the platform-specific overrides.
 		</member>
-		<member name="display/display_server/driver.android" type="String" setter="" getter="">
-			Android override for [member display/display_server/driver].
-		</member>
-		<member name="display/display_server/driver.ios" type="String" setter="" getter="">
-			iOS override for [member display/display_server/driver].
-		</member>
 		<member name="display/display_server/driver.linuxbsd" type="String" setter="" getter="">
 			LinuxBSD override for [member display/display_server/driver].
-		</member>
-		<member name="display/display_server/driver.macos" type="String" setter="" getter="">
-			MacOS override for [member display/display_server/driver].
-		</member>
-		<member name="display/display_server/driver.visionos" type="String" setter="" getter="">
-			visionOS override for [member display/display_server/driver].
 		</member>
 		<member name="display/display_server/driver.windows" type="String" setter="" getter="">
 			Windows override for [member display/display_server/driver].
@@ -3002,27 +2987,11 @@
 			[b]Note:[/b] The availability of these options depends on whether the engine was compiled with support for them (determined by SCons options [code]opengl3[/code] and [code]angle_libs[/code]).
 			[b]Note:[/b] The actual rendering driver may be automatically changed by the engine as a result of a fallback, or a user-specified command line argument. To get the actual rendering driver that is used at runtime, use [method RenderingServer.get_current_rendering_driver_name] instead of reading this project setting's value.
 		</member>
-		<member name="rendering/gl_compatibility/driver.android" type="String" setter="" getter="" default="&quot;opengl3&quot;">
-			Android override for [member rendering/gl_compatibility/driver].
-			Only one option is supported:
-			- [code]opengl3[/code], OpenGL ES 3.0 from native drivers.
-		</member>
-		<member name="rendering/gl_compatibility/driver.ios" type="String" setter="" getter="" default="&quot;opengl3&quot;">
-			iOS override for [member rendering/gl_compatibility/driver].
-			Only one option is supported:
-			- [code]opengl3[/code], OpenGL ES 3.0 from native drivers.
-		</member>
 		<member name="rendering/gl_compatibility/driver.linuxbsd" type="String" setter="" getter="" default="&quot;opengl3&quot;">
 			LinuxBSD override for [member rendering/gl_compatibility/driver].
 			Two options are supported:
 			- [code]opengl3[/code] (default), OpenGL 3.3 from native drivers.
 			- [code]opengl3_es[/code], OpenGL ES 3.0 from native drivers. If [member rendering/gl_compatibility/fallback_to_gles] is enabled, this is used as a fallback if OpenGL 3.3 is not supported.
-		</member>
-		<member name="rendering/gl_compatibility/driver.macos" type="String" setter="" getter="" default="&quot;opengl3&quot;">
-			macOS override for [member rendering/gl_compatibility/driver].
-			Two options are supported:
-			- [code]opengl3[/code] (default), OpenGL 3.3 from native drivers. If [member rendering/gl_compatibility/fallback_to_native] is enabled, this is used as a fallback if ANGLE is configured as the preferred driver but not supported.
-			- [code]opengl3_angle[/code], OpenGL ES 3.0 using the ANGLE compatibility layer over native OpenGL drivers. If [member rendering/gl_compatibility/fallback_to_angle] is enabled, this is used as a fallback if OpenGL 3.3 is not supported.
 		</member>
 		<member name="rendering/gl_compatibility/driver.web" type="String" setter="" getter="" default="&quot;opengl3&quot;">
 			Web override for [member rendering/gl_compatibility/driver].
@@ -3312,34 +3281,11 @@
 			[b]Note:[/b] If a given platform has no registered drivers, it can fall back to the Compatibility renderer (OpenGL 3) if [member rendering/rendering_device/fallback_to_opengl3] is enabled. This fallback happens automatically for the Web platform regardless of that property.
 			[b]Note:[/b] The actual rendering driver may be automatically changed by the engine as a result of a fallback, or a user-specified command line argument. To get the actual rendering driver that is used at runtime, use [method RenderingServer.get_current_rendering_driver_name] instead of reading this project setting's value.
 		</member>
-		<member name="rendering/rendering_device/driver.android" type="String" setter="" getter="" default="&quot;vulkan&quot;">
-			Android override for [member rendering/rendering_device/driver].
-			Only one option is supported:
-			- [code]vulkan[/code], Vulkan from native drivers.
-			[b]Note:[/b] If Vulkan was disabled at compile time, there is no alternative RenderingDevice driver.
-		</member>
-		<member name="rendering/rendering_device/driver.ios" type="String" setter="" getter="" default="&quot;metal&quot;">
-			iOS override for [member rendering/rendering_device/driver].
-			Two options are supported:
-			- [code]metal[/code] (default), Metal from native drivers.
-			- [code]vulkan[/code], Vulkan over Metal via MoltenVK.
-		</member>
 		<member name="rendering/rendering_device/driver.linuxbsd" type="String" setter="" getter="" default="&quot;vulkan&quot;">
 			LinuxBSD override for [member rendering/rendering_device/driver].
 			Only one option is supported:
 			- [code]vulkan[/code], Vulkan from native drivers.
 			[b]Note:[/b] If Vulkan was disabled at compile time, there is no alternative RenderingDevice driver.
-		</member>
-		<member name="rendering/rendering_device/driver.macos" type="String" setter="" getter="" default="&quot;metal&quot;">
-			macOS override for [member rendering/rendering_device/driver].
-			Two options are supported:
-			- [code]metal[/code] (default), Metal from native drivers, only supported on Apple Silicon Macs. On Intel Macs, it will automatically fall back to [code]vulkan[/code] as Metal support is not implemented.
-			- [code]vulkan[/code], Vulkan over Metal via MoltenVK, supported on both Apple Silicon and Intel Macs.
-		</member>
-		<member name="rendering/rendering_device/driver.visionos" type="String" setter="" getter="" default="&quot;metal&quot;">
-			visionOS override for [member rendering/rendering_device/driver].
-			Only one option is supported:
-			- [code]metal[/code] (default), Metal from native drivers.
 		</member>
 		<member name="rendering/rendering_device/driver.windows" type="String" setter="" getter="" default="&quot;vulkan&quot;">
 			Windows override for [member rendering/rendering_device/driver].
