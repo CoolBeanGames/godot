@@ -39,3 +39,22 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   noise (expected-error prints, NuGet chatter) even on success. The doctest
   `Status: SUCCESS!` line and the presence of the binary + `bin/GodotSharp`
   assemblies are the real verdicts.
+
+## Step 2: GDScript removed, Project Manager removed (DONE)
+
+- Build flags add: `module_gdscript_enabled=no`.
+- `modules/gdscript/` deleted outright (macro guards alone can leak the
+  `GDScript` native class into ClassDB).
+- `editor/project_manager/` deleted. `main.cpp`: no-project runs print
+  `Error: No project found. Open a project from Crete Hub or pass
+  --path <project_dir>.` and exit 1 instead of opening the manager.
+- `TextServer.STRUCTURED_TEXT_GDSCRIPT` renamed to
+  `STRUCTURED_TEXT_CODE` (same value 5): it was the last `GDScript`
+  reference in the ClassDB/extension-API surface.
+- New tests: `tests/core/test_crete_removals.cpp` (GDScript class absent,
+  `.gd` unknown, project-manager sources gone).
+- Results: build DONE with 0 errors; focused suite 3/3 passed; full suite
+  **1374 passed, 0 failed, 3 skipped; 360,785 assertions. Status: SUCCESS.**
+  (6 fewer cases than Step 1: the GDScript module's own tests are gone.)
+  Extension-API dump contains 0 GDScript references; no-project runs exit 1
+  with the Crete Hub message.

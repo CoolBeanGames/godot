@@ -38,7 +38,6 @@
 #include "core/string/string_builder.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
-#include "editor/project_manager/project_manager.h"
 #include "editor/themes/editor_scale.h"
 #include "scene/gui/box_container.h"
 #include "scene/gui/color_rect.h"
@@ -150,8 +149,6 @@ void CreditsRoll::roll_credits() {
 		Ref<Theme> theme;
 		if (EditorNode::get_singleton()) {
 			theme = EditorNode::get_singleton()->get_editor_theme();
-		} else if (ProjectManager::get_singleton()) {
-			theme = ProjectManager::get_singleton()->get_theme();
 		} else {
 			return;
 		}

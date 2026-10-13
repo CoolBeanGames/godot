@@ -53,6 +53,7 @@
 #include "editor/settings/editor_command_palette.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
+#include "modules/modules_enabled.gen.h" // For gdscript.
 #include "scene/gui/grid_container.h"
 #include "scene/gui/menu_button.h"
 #include "scene/gui/rich_text_label.h"
@@ -902,6 +903,7 @@ void ScriptTextEditor::_update_warnings() {
 	warnings_panel->clear();
 
 	bool has_connections_table = false;
+#ifdef MODULE_GDSCRIPT_ENABLED
 	// Add missing connections.
 	if (GLOBAL_GET("debug/gdscript/warnings/enable")) {
 		Node *base = get_tree()->get_edited_scene_root();
@@ -924,6 +926,7 @@ void ScriptTextEditor::_update_warnings() {
 			warning_nb += missing_connections.size();
 		}
 	}
+#endif // MODULE_GDSCRIPT_ENABLED
 
 	code_editor->set_warning_count(warning_nb);
 

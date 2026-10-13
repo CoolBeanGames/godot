@@ -6045,7 +6045,7 @@ void RichTextLabel::append_text(const String &p_bbcode) {
 				} else if (bidi_override_option->value == "l" || bidi_override_option->value == "list") {
 					st_parser_type = TextServer::STRUCTURED_TEXT_LIST;
 				} else if (bidi_override_option->value == "n" || bidi_override_option->value == "gdscript") {
-					st_parser_type = TextServer::STRUCTURED_TEXT_GDSCRIPT;
+					st_parser_type = TextServer::STRUCTURED_TEXT_CODE;
 				} else if (bidi_override_option->value == "c" || bidi_override_option->value == "custom") {
 					st_parser_type = TextServer::STRUCTURED_TEXT_CUSTOM;
 				}

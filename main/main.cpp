@@ -125,7 +125,6 @@
 #include "editor/file_system/editor_file_system.h"
 #include "editor/file_system/editor_paths.h"
 #include "editor/gui/progress_dialog.h"
-#include "editor/project_manager/project_manager.h"
 #include "editor/register_editor_types.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/translations/editor_translation.h"
@@ -214,7 +213,6 @@ static String accessibility_driver_name;
 static bool accessibility_mode_set = false;
 static bool single_window = false;
 static bool editor = false;
-static bool project_manager = false;
 static bool cmdline_tool = false;
 static String locale;
 static String log_file;
@@ -561,7 +559,6 @@ void Main::print_help(const char *p_binary) {
 	print_help_option("--, ++", "Separator for user-provided arguments. Following arguments are not used by the engine, but can be read from `OS.get_cmdline_user_args()`.\n");
 #ifdef TOOLS_ENABLED
 	print_help_option("-e, --editor", "Start the editor instead of running the scene.\n", CLI_OPTION_AVAILABILITY_EDITOR);
-	print_help_option("-p, --project-manager", "Start the project manager, even if a project is auto-detected.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--recovery-mode", "Start the editor in recovery mode, which disables features that can typically cause startup crashes, such as tool scripts, editor plugins, GDExtension addons, and others.\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--debug-server <uri>", "Start the editor debug server (<protocol>://<host/IP>[:port], e.g. tcp://127.0.0.1:6007)\n", CLI_OPTION_AVAILABILITY_EDITOR);
 	print_help_option("--dap-port <port>", "Use the specified port for the GDScript Debug Adapter Protocol. Recommended port range [1024, 49151].\n", CLI_OPTION_AVAILABILITY_EDITOR);
@@ -1598,8 +1595,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		} else if (arg == "-e" || arg == "--editor") { // starts editor
 
 			editor = true;
-		} else if (arg == "-p" || arg == "--project-manager") { // starts project manager
-			project_manager = true;
 		} else if (arg == "--recovery-mode") { // Enables recovery mode.
 			recovery_mode = true;
 		} else if (arg == "--debug-server") {
@@ -2075,14 +2070,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		I = N;
 	}
 
-#ifdef TOOLS_ENABLED
-	if (editor && project_manager) {
-		OS::get_singleton()->print(
-				"Error: Command line arguments implied opening both editor and project manager, which is not possible. Aborting.\n");
-		goto error;
-	}
-#endif
-
 #if defined(DEBUG_ENABLED) || defined(TOOLS_ENABLED)
 	// Network file system needs to be configured before globals, since globals are based on the
 	// 'project.godot' file which will only be available through the network if this is enabled
@@ -2138,7 +2125,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	// Initialize WorkerThreadPool.
 	{
 #ifdef THREADS_ENABLED
-		if (editor || project_manager) {
+		if (editor) {
 			WorkerThreadPool::get_singleton()->init(-1, 0.75);
 		} else {
 			int worker_threads = GLOBAL_GET("threading/worker_pool/max_threads");
@@ -2151,9 +2138,10 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	}
 
 #ifdef TOOLS_ENABLED
-	if (!project_manager && !editor) {
-		// If we didn't find a project, we fall back to the project manager.
-		project_manager = !found_project && !cmdline_tool;
+	if (!editor && !found_project && !cmdline_tool) {
+		// Crete: the built-in project manager is removed. Projects open from Crete Hub.
+		OS::get_singleton()->print("Error: No project found. Open a project from Crete Hub or pass --path <project_dir>.\n");
+		goto error;
 	}
 
 	{
@@ -2177,9 +2165,9 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		};
 
 #if defined(WINDOWS_ENABLED) || defined(LINUXBSD_ENABLED)
-		if (editor || project_manager || test_rd_support || test_rd_creation) {
+		if (editor || test_rd_support || test_rd_creation) {
 #else
-		if (editor || project_manager) {
+		if (editor) {
 #endif
 			// Disable Vulkan overlays in editor, they cause various issues.
 			for (const String &layer_disable : layers_to_disable) {
@@ -2233,12 +2221,8 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		}
 	}
 
-	if (project_manager) {
-		Engine::get_singleton()->set_project_manager_hint(true);
-	}
-
 	if (recovery_mode) {
-		if (project_manager || !editor) {
+		if (!editor) {
 			OS::get_singleton()->print("Error: Recovery mode can only be used in the editor. Aborting.\n");
 			goto error;
 		}
@@ -2323,7 +2307,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	// `--log-file` can be used with any path (including absolute paths outside the project folder),
 	// so check for filesystem access if it's used.
 	if (FileAccess::get_create_func(!log_file.is_empty() ? FileAccess::ACCESS_FILESYSTEM : FileAccess::ACCESS_USERDATA) &&
-			(!log_file.is_empty() || (!project_manager && !editor && GLOBAL_GET("debug/file_logging/enable_file_logging")))) {
+			(!log_file.is_empty() || (!editor && GLOBAL_GET("debug/file_logging/enable_file_logging")))) {
 		// Don't create logs for the project manager as they would be written to
 		// the current working directory, which is inconvenient.
 		String base_path;
@@ -2341,7 +2325,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	if (main_args.is_empty() && String(GLOBAL_GET("application/run/main_scene")) == "") {
 #ifdef TOOLS_ENABLED
-		if (!editor && !project_manager) {
+		if (!editor) {
 #endif
 			const String error_msg = "Error: Can't run project: no main scene defined in the project.\n";
 			OS::get_singleton()->print("%s", error_msg.utf8().get_data());
@@ -2352,7 +2336,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 #endif
 	}
 
-	if (editor || project_manager) {
+	if (editor) {
 		Engine::get_singleton()->set_editor_hint(true);
 		use_custom_res = false;
 		input_map->load_default(); //keys for editor
@@ -2499,12 +2483,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	}
 	renderer_hints += "gl_compatibility";
 	if (default_renderer_mobile.is_empty()) {
-		default_renderer_mobile = "gl_compatibility";
-	}
-	// Default to Compatibility when using the project manager.
-	if (rendering_driver.is_empty() && rendering_method.is_empty() && project_manager) {
-		rendering_driver = "opengl3";
-		rendering_method = "gl_compatibility";
 		default_renderer_mobile = "gl_compatibility";
 	}
 #endif
@@ -2672,15 +2650,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	OS::get_singleton()->set_current_rendering_driver_name(rendering_driver, rendering_driver_source);
 	OS::get_singleton()->set_current_rendering_method(rendering_method, rendering_method_source);
 
-#ifdef TOOLS_ENABLED
-	if (!force_res && project_manager) {
-		// Ensure splash screen size matches the project manager window size
-		// (see `editor/project_manager.cpp` for defaults).
-		window_size.width = ProjectManager::DEFAULT_WINDOW_WIDTH;
-		window_size.height = ProjectManager::DEFAULT_WINDOW_HEIGHT;
-	}
-#endif
-
 	if (use_custom_res) {
 		if (!force_res) {
 			window_size.width = GLOBAL_GET("display/window/size/viewport_width");
@@ -2762,7 +2731,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	load_shell_env = GLOBAL_DEF("application/run/load_shell_environment", false);
 
 #ifdef TOOLS_ENABLED
-	if (editor || project_manager) {
+	if (editor) {
 		// The editor and project manager always detect and use hiDPI if needed.
 		OS::get_singleton()->_allow_hidpi = true;
 		load_shell_env = true;
@@ -2776,7 +2745,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 		separate_thread_render = (int)GLOBAL_DEF("rendering/driver/threads/thread_model", OS::RENDER_THREAD_SAFE) == OS::RENDER_SEPARATE_THREAD;
 	}
 
-	if (editor || project_manager) {
+	if (editor) {
 		// Editor and project manager cannot run with rendering in a separate thread (they will crash on startup).
 		separate_thread_render = 0;
 	}
@@ -2801,14 +2770,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 
 	GLOBAL_DEF_RST_NOVAL("audio/driver/driver", AudioDriverManager::get_driver(0)->get_name());
 	if (audio_driver.is_empty()) { // Specified in project.godot.
-		if (project_manager) {
-			// The project manager doesn't need to play sound (TTS audio output is not emitted by Godot, but by the system itself).
-			// Disable audio output so it doesn't appear in the list of applications outputting sound in the OS.
-			// On macOS, this also prevents the project manager from inhibiting suspend.
-			audio_driver = "Dummy";
-		} else {
-			audio_driver = GLOBAL_GET("audio/driver/driver");
-		}
+		audio_driver = GLOBAL_GET("audio/driver/driver");
 	}
 
 	// Make sure that dummy is the last one, which it is assumed to be by design.
@@ -2925,7 +2887,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	message_queue = memnew(MessageQueue);
 
 #if defined(STEAMAPI_ENABLED)
-	if (editor || project_manager) {
+	if (editor) {
 		steam_tracker = memnew(SteamTracker);
 	}
 #endif
@@ -3043,13 +3005,13 @@ Error Main::setup2(bool p_show_boot_logo) {
 #ifdef TOOLS_ENABLED
 	int accessibility_mode_editor = 0;
 	int tablet_driver_editor = -1;
-	if (editor || project_manager || cmdline_tool) {
+	if (editor || cmdline_tool) {
 		OS::get_singleton()->benchmark_begin_measure("Startup", "Initialize Early Settings");
 
 		EditorPaths::create();
 
 		// Editor setting class is not available, load config directly.
-		if (!init_use_custom_screen && (editor || project_manager) && EditorPaths::get_singleton()->are_paths_valid()) {
+		if (!init_use_custom_screen && (editor) && EditorPaths::get_singleton()->are_paths_valid()) {
 			ERR_FAIL_COND_V(!DirAccess::dir_exists_absolute(EditorPaths::get_singleton()->get_config_dir()), FAILED);
 
 			String config_file_path = EditorSettings::get_existing_settings_path();
@@ -3083,8 +3045,6 @@ Error Main::setup2(bool p_show_boot_logo) {
 
 					if (editor) {
 						screen_property = "interface/editor/appearance/editor_screen";
-					} else if (project_manager) {
-						screen_property = "interface/editor/appearance/project_manager_screen";
 					} else {
 						// Skip.
 						screen_found = true;
@@ -3281,8 +3241,6 @@ Error Main::setup2(bool p_show_boot_logo) {
 		DisplayServerEnums::Context context;
 		if (editor) {
 			context = DisplayServerEnums::CONTEXT_EDITOR;
-		} else if (project_manager) {
-			context = DisplayServerEnums::CONTEXT_PROJECTMAN;
 		} else {
 			context = DisplayServerEnums::CONTEXT_ENGINE;
 		}
@@ -3298,14 +3256,14 @@ Error Main::setup2(bool p_show_boot_logo) {
 		}
 
 #ifdef TOOLS_ENABLED
-		if ((project_manager || editor) && init_expand_to_title) {
+		if ((editor) && init_expand_to_title) {
 			window_flags |= DisplayServerEnums::WINDOW_FLAG_EXTEND_TO_TITLE_BIT;
 		}
 #endif
 
 		if (!accessibility_mode_set) {
 #ifdef TOOLS_ENABLED
-			if (editor || project_manager || cmdline_tool) {
+			if (editor || cmdline_tool) {
 				accessibility_mode = (AccessibilityServerEnums::AccessibilityMode)accessibility_mode_editor;
 			} else {
 #else
@@ -3315,7 +3273,7 @@ Error Main::setup2(bool p_show_boot_logo) {
 			}
 		}
 		if (accessibility_driver_name.is_empty()) {
-			if (!editor && !project_manager) {
+			if (!editor) {
 				accessibility_driver_name = GLOBAL_GET("accessibility/general/accessibility_driver");
 			} else {
 				accessibility_driver_name = "accesskit";
@@ -3417,44 +3375,6 @@ Error Main::setup2(bool p_show_boot_logo) {
 			return err;
 		}
 
-#ifdef TOOLS_ENABLED
-		if (project_manager) {
-			float ui_scale = init_custom_scale;
-			switch (init_display_scale) {
-				case 0:
-					ui_scale = EditorSettings::get_auto_display_scale();
-					break;
-				case 1:
-					ui_scale = 0.75;
-					break;
-				case 2:
-					ui_scale = 1.0;
-					break;
-				case 3:
-					ui_scale = 1.25;
-					break;
-				case 4:
-					ui_scale = 1.5;
-					break;
-				case 5:
-					ui_scale = 1.75;
-					break;
-				case 6:
-					ui_scale = 2.0;
-					break;
-				default:
-					break;
-			}
-			if (!(force_res || use_custom_res)) {
-				display_server->window_set_size(Size2(window_size) * ui_scale, DisplayServerEnums::MAIN_WINDOW_ID);
-			}
-			if (display_server->has_feature(DisplayServerEnums::FEATURE_SUBWINDOWS) && !display_server->has_feature(DisplayServerEnums::FEATURE_SELF_FITTING_WINDOWS)) {
-				Size2 real_size = DisplayServer::get_singleton()->window_get_size();
-				Rect2i scr_rect = display_server->screen_get_usable_rect(init_screen);
-				display_server->window_set_position(scr_rect.position + (scr_rect.size - real_size) / 2, DisplayServerEnums::MAIN_WINDOW_ID);
-			}
-		}
-#endif
 		if (display_server->has_feature(DisplayServerEnums::FEATURE_SUBWINDOWS)) {
 			display_server->show_window(DisplayServerEnums::MAIN_WINDOW_ID);
 		}
@@ -3660,7 +3580,7 @@ Error Main::setup2(bool p_show_boot_logo) {
 			id->set_agile_input_event_flushing(agile_input_event_flushing);
 
 			if (bool(GLOBAL_DEF_BASIC("input_devices/pointing/emulate_touch_from_mouse", false)) &&
-					!(editor || project_manager)) {
+					!(editor)) {
 				if (!DisplayServer::get_singleton()->is_touchscreen_available()) {
 					//only if no touchscreen ui hint, set emulation
 					id->set_emulate_touch_from_mouse(true);
@@ -3895,13 +3815,10 @@ Error Main::setup2(bool p_show_boot_logo) {
 		EngineDebugger::get_singleton()->profiler_enable("scripts", true);
 	}
 
-	if (!project_manager) {
-		// If not running the project manager, and now that the engine is
-		// able to load resources, load the global shader variables.
-		// If running on editor, don't load the textures because the editor
-		// may want to import them first. Editor will reload those later.
-		rendering_server->global_shader_parameters_load_settings(!editor);
-	}
+	// Now that the engine is able to load resources, load the global shader variables.
+	// If running on editor, don't load the textures because the editor
+	// may want to import them first. Editor will reload those later.
+	rendering_server->global_shader_parameters_load_settings(!editor);
 
 	OS::get_singleton()->benchmark_end_measure("Startup", "Finalize Setup");
 
@@ -3968,7 +3885,7 @@ void Main::setup_boot_logo() {
 		Color boot_bg_color = GLOBAL_GET("application/boot_splash/bg_color");
 
 #if defined(TOOLS_ENABLED) && !defined(NO_EDITOR_SPLASH)
-		boot_bg_color = GLOBAL_DEF_BASIC("application/boot_splash/bg_color", (editor || project_manager) ? boot_splash_editor_bg_color : boot_splash_bg_color);
+		boot_bg_color = GLOBAL_DEF_BASIC("application/boot_splash/bg_color", (editor) ? boot_splash_editor_bg_color : boot_splash_bg_color);
 #endif
 		if (boot_logo.is_valid()) {
 			RenderingServer::get_singleton()->set_boot_image_with_stretch(boot_logo, boot_bg_color, boot_stretch_mode, boot_logo_filter);
@@ -3977,7 +3894,7 @@ void Main::setup_boot_logo() {
 #ifndef NO_DEFAULT_BOOT_LOGO
 			MAIN_PRINT("Main: Create bootsplash");
 #if defined(TOOLS_ENABLED) && !defined(NO_EDITOR_SPLASH)
-			Ref<Image> splash = (editor || project_manager) ? memnew(Image(boot_splash_editor_png)) : memnew(Image(boot_splash_png));
+			Ref<Image> splash = (editor) ? memnew(Image(boot_splash_editor_png)) : memnew(Image(boot_splash_png));
 #else
 			Ref<Image> splash = memnew(Image(boot_splash_png));
 #endif
@@ -4066,8 +3983,6 @@ int Main::start() {
 #endif // DISABLE_DEPRECATED
 		} else if (E->get() == "-e" || E->get() == "--editor") {
 			editor = true;
-		} else if (E->get() == "-p" || E->get() == "--project-manager") {
-			project_manager = true;
 		} else if (E->get() == "--recovery-mode") {
 			recovery_mode = true;
 		} else if (E->get() == "--install-android-build-template") {
@@ -4347,13 +4262,13 @@ int Main::start() {
 	}
 
 #ifdef TOOLS_ENABLED
-	if (!editor && !project_manager && !cmdline_tool && script.is_empty() && game_path.is_empty()) {
+	if (!editor && !cmdline_tool && script.is_empty() && game_path.is_empty()) {
 		// If we end up here, it means we didn't manage to detect what we want to run.
 		// Let's throw an error gently. The code leading to this is pretty brittle so
 		// this might end up triggered by valid usage, in which case we'll have to
 		// fine-tune further.
-		OS::get_singleton()->alert("Couldn't detect whether to run the editor, the project manager or a specific project. Aborting.");
-		ERR_FAIL_V_MSG(EXIT_FAILURE, "Couldn't detect whether to run the editor, the project manager or a specific project. Aborting.");
+		OS::get_singleton()->alert("Couldn't detect whether to run the editor or a specific project. Aborting.");
+		ERR_FAIL_V_MSG(EXIT_FAILURE, "Couldn't detect whether to run the editor or a specific project. Aborting.");
 	}
 #endif
 
@@ -4487,14 +4402,14 @@ int Main::start() {
 
 		bool embed_subwindows = GLOBAL_GET("display/window/subwindows/embed_subwindows");
 
-		if (single_window || (!project_manager && !editor && embed_subwindows) || !DisplayServer::get_singleton()->has_feature(DisplayServerEnums::FEATURE_SUBWINDOWS)) {
+		if (single_window || (!editor && embed_subwindows) || !DisplayServer::get_singleton()->has_feature(DisplayServerEnums::FEATURE_SUBWINDOWS)) {
 			sml->get_root()->set_embedding_subwindows(true);
 		}
 
 		ResourceLoader::add_custom_loaders();
 		ResourceSaver::add_custom_savers();
 
-		if (!project_manager && !editor) { // game
+		if (!editor) { // game
 			if (!game_path.is_empty() || !script.is_empty()) {
 				//autoload
 				OS::get_singleton()->benchmark_begin_measure("Startup", "Load Autoloads");
@@ -4621,7 +4536,7 @@ int Main::start() {
 		sml->set_auto_accept_quit(GLOBAL_GET("application/config/auto_accept_quit"));
 		sml->set_quit_on_go_back(GLOBAL_GET("application/config/quit_on_go_back"));
 
-		if (!editor && !project_manager) {
+		if (!editor) {
 			//standard helpers that can be changed from main config
 
 			String stretch_mode = GLOBAL_GET("display/window/stretch/mode");
@@ -4702,7 +4617,7 @@ int Main::start() {
 #endif
 
 		String local_game_path;
-		if (!game_path.is_empty() && !project_manager) {
+		if (!game_path.is_empty() ) {
 			local_game_path = game_path.replace_char('\\', '/');
 
 			if (!local_game_path.begins_with("res://")) {
@@ -4750,7 +4665,7 @@ int Main::start() {
 #endif
 		}
 
-		if (!project_manager && !editor) { // game
+		if (!editor) { // game
 
 			OS::get_singleton()->benchmark_begin_measure("Startup", "Load Game");
 
@@ -4803,24 +4718,7 @@ int Main::start() {
 		}
 
 #ifdef TOOLS_ENABLED
-		if (project_manager) {
-			OS::get_singleton()->benchmark_begin_measure("Startup", "Project Manager");
-			Engine::get_singleton()->set_editor_hint(true);
-
-			sml->get_root()->set_translation_domain("godot.editor");
-			if (editor_pseudolocalization) {
-				translation_server->get_editor_domain()->set_pseudolocalization_enabled(true);
-			}
-
-			ProjectManager *pmanager = memnew(ProjectManager);
-			ProgressDialog *progress_dialog = memnew(ProgressDialog);
-			pmanager->add_child(progress_dialog);
-
-			sml->get_root()->add_child(pmanager);
-			OS::get_singleton()->benchmark_end_measure("Startup", "Project Manager");
-		}
-
-		if (project_manager || editor) {
+		if (editor) {
 			// Load SSL Certificates from Editor Settings (or builtin)
 			Crypto::load_default_certificates(
 					EditorSettings::get_singleton()->get_setting("network/tls/editor_tls_certificates").operator String());
@@ -5121,7 +5019,7 @@ bool Main::iteration() {
 	if (frame > 1000000) {
 		// Wait a few seconds before printing FPS, as FPS reporting just after the engine has started is inaccurate.
 		if (hide_print_fps_attempts == 0) {
-			if (editor || project_manager) {
+			if (editor) {
 				if (print_fps) {
 					print_line(vformat("Editor FPS: %d (%s mspf)", frames, rtos(1000.0 / frames).pad_decimals(2)));
 				}

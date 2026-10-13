@@ -725,27 +725,6 @@ void ThemeModern::populate_standard_styles(const Ref<EditorTheme> &p_theme, Edit
 			p_theme->set_stylebox("title_button_pressed", "Tree", style_tree_title);
 		}
 
-		// ProjectList.
-		{
-			Ref<StyleBoxFlat> style_project_list_hover = p_config.flat_button_hover->duplicate();
-			style_project_list_hover->set_bg_color(_get_base_color(p_config, -0.2, 0.75));
-			style_project_list_hover->set_content_margin_all(0);
-
-			Ref<StyleBoxFlat> style_project_list_selected = style_project_list_hover->duplicate();
-			style_project_list_selected->set_bg_color(_get_base_color(p_config, -1.0, 0.75));
-
-			Ref<StyleBoxFlat> style_project_list_hover_pressed = style_project_list_selected->duplicate();
-			style_project_list_hover_pressed->set_bg_color(_get_base_color(p_config, -1.2, 0.75));
-
-			p_theme->set_stylebox("hovered", "ProjectList", style_project_list_hover);
-			p_theme->set_stylebox("selected", "ProjectList", style_project_list_selected);
-			p_theme->set_stylebox("hover_pressed", "ProjectList", style_project_list_hover_pressed);
-			p_theme->set_stylebox("focus", "ProjectList", p_config.focus_style);
-
-			p_theme->set_color(SceneStringName(font_color), "ProjectList", p_config.font_color);
-			p_theme->set_color("guide_color", "ProjectList", Color(1, 1, 1, 0));
-		}
-
 		// ItemList.
 		{
 			Ref<StyleBoxFlat> style_itemlist_bg = p_config.base_style->duplicate();
@@ -1600,48 +1579,6 @@ void ThemeModern::populate_standard_styles(const Ref<EditorTheme> &p_theme, Edit
 }
 
 void ThemeModern::populate_editor_styles(const Ref<EditorTheme> &p_theme, EditorThemeManager::ThemeConfiguration &p_config) {
-	// Project manager.
-	{
-		Ref<StyleBoxFlat> style_project_list = p_config.base_style->duplicate();
-		style_project_list->set_bg_color(p_config.surface_low_color);
-
-		p_theme->set_stylebox("panel_container", "ProjectManager", p_config.foreground_panel);
-		p_theme->set_stylebox("project_list", "ProjectManager", style_project_list);
-		p_theme->set_stylebox("quick_settings_panel", "ProjectManager", style_project_list);
-		p_theme->set_constant("sidebar_button_icon_separation", "ProjectManager", int(6 * EDSCALE));
-		p_theme->set_icon("browse_folder", "ProjectManager", p_theme->get_icon(SNAME("FolderBrowse"), EditorStringName(EditorIcons)));
-		p_theme->set_icon("browse_file", "ProjectManager", p_theme->get_icon(SNAME("FileBrowse"), EditorStringName(EditorIcons)));
-
-		// ProjectTag.
-		{
-			p_theme->set_type_variation("ProjectTagButton", "Button");
-
-			Ref<StyleBoxFlat> tag = p_config.button_style->duplicate();
-			tag->set_border_width_all(0);
-			tag->set_corner_radius(CORNER_TOP_LEFT, 0);
-			tag->set_corner_radius(CORNER_BOTTOM_LEFT, 0);
-			tag->set_corner_radius(CORNER_TOP_RIGHT, 4);
-			tag->set_corner_radius(CORNER_BOTTOM_RIGHT, 4);
-			p_theme->set_stylebox(CoreStringName(normal), "ProjectTagButton", tag);
-
-			tag = p_config.button_style_hover->duplicate();
-			tag->set_border_width_all(0);
-			tag->set_corner_radius(CORNER_TOP_LEFT, 0);
-			tag->set_corner_radius(CORNER_BOTTOM_LEFT, 0);
-			tag->set_corner_radius(CORNER_TOP_RIGHT, 4);
-			tag->set_corner_radius(CORNER_BOTTOM_RIGHT, 4);
-			p_theme->set_stylebox(SceneStringName(hover), "ProjectTagButton", tag);
-
-			tag = p_config.button_style_pressed->duplicate();
-			tag->set_border_width_all(0);
-			tag->set_corner_radius(CORNER_TOP_LEFT, 0);
-			tag->set_corner_radius(CORNER_BOTTOM_LEFT, 0);
-			tag->set_corner_radius(CORNER_TOP_RIGHT, 4);
-			tag->set_corner_radius(CORNER_BOTTOM_RIGHT, 4);
-			p_theme->set_stylebox(SceneStringName(pressed), "ProjectTagButton", tag);
-		}
-	}
-
 	// Editor and main screen.
 	{
 		// Editor background.

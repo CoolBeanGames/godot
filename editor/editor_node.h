@@ -173,7 +173,6 @@ public:
 		PROJECT_INSTALL_ANDROID_SOURCE,
 		PROJECT_OPEN_USER_DATA_FOLDER,
 		PROJECT_RELOAD_CURRENT_PROJECT,
-		PROJECT_QUIT_TO_PROJECT_MANAGER,
 
 		TOOLS_ORPHAN_RESOURCES,
 		TOOLS_BUILD_PROFILE_MANAGER,
@@ -650,7 +649,7 @@ private:
 	void _proceed_closing_scene_tabs();
 	void _proceed_save_asing_scene_tabs();
 	bool _is_closing_editor() const;
-	void _restart_editor(bool p_goto_project_manager = false);
+	void _restart_editor();
 
 	Dictionary _get_main_scene_state();
 	void _set_main_scene_state(const Dictionary &p_state);
@@ -1019,7 +1018,7 @@ public:
 	void save_scene_list(const HashSet<String> &p_scene_paths);
 	void save_before_run();
 	void try_autosave();
-	void restart_editor(bool p_goto_project_manager = false);
+	void restart_editor();
 	void unload_editor_addons();
 
 	void open_setting_override(const String &p_property);

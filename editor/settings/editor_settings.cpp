@@ -51,7 +51,6 @@
 #include "editor/editor_node.h"
 #include "editor/file_system/editor_paths.h"
 #include "editor/inspector/editor_property_name_processor.h"
-#include "editor/project_manager/engine_update_label.h"
 #include "editor/themes/editor_theme_manager.h"
 #include "editor/translations/editor_translation.h"
 #include "main/main.h"
@@ -491,17 +490,6 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 #else
 	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_ENUM, "interface/editor/input/tablet_driver", -1, "Default:-1");
 #endif
-
-	String project_manager_screen_hints = "Screen With Mouse Pointer:-4,Screen With Keyboard Focus:-3,Primary Screen:-2";
-	for (int i = 0; i < DisplayServer::get_singleton()->get_screen_count(); i++) {
-		project_manager_screen_hints += ",Screen " + itos(i + 1) + ":" + itos(i);
-	}
-	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_ENUM, "interface/editor/appearance/project_manager_screen", EditorSettings::InitialScreen::INITIAL_SCREEN_PRIMARY, project_manager_screen_hints)
-
-	{
-		const String update_hint = vformat("Disable Update Checks,Auto (%s),Check Newest Preview,Check Newest Stable,Check Newest Patch", (str_compare(GODOT_VERSION_STATUS, "stable") == 0) ? "Stable" : "Preview");
-		EDITOR_SETTING_BASIC(Variant::INT, PROPERTY_HINT_ENUM, "network/connection/check_for_updates", EngineUpdateLabel::UpdateMode::AUTO, update_hint);
-	}
 
 	EDITOR_SETTING_USAGE(Variant::BOOL, PROPERTY_HINT_NONE, "interface/editor/appearance/use_embedded_menu", false, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_EDITOR_BASIC_SETTING)
 	EDITOR_SETTING_USAGE(Variant::BOOL, PROPERTY_HINT_NONE, "interface/editor/appearance/use_native_file_dialogs", false, "", PROPERTY_USAGE_DEFAULT)
@@ -1172,21 +1160,6 @@ void EditorSettings::_load_defaults(Ref<ConfigFile> p_extra_config) {
 	EDITOR_SETTING_USAGE(Variant::BOOL, PROPERTY_HINT_NONE, "input/buffering/agile_event_flushing", false, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED | PROPERTY_USAGE_EDITOR_BASIC_SETTING)
 	EDITOR_SETTING_USAGE(Variant::BOOL, PROPERTY_HINT_NONE, "input/buffering/use_accumulated_input", true, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED | PROPERTY_USAGE_EDITOR_BASIC_SETTING)
 
-	// TRANSLATORS: Project Manager here refers to the tool used to create/manage Godot projects.
-	EDITOR_SETTING(Variant::INT, PROPERTY_HINT_ENUM, "project_manager/sorting_order", 0, "Last Edited,Name,Path")
-	EDITOR_SETTING_BASIC(Variant::INT, PROPERTY_HINT_ENUM, "project_manager/directory_naming_convention", 1, "No Convention,kebab-case,snake_case,camelCase,PascalCase,Title Case")
-
-#if defined(WEB_ENABLED)
-	// Web platform only supports `gl_compatibility`.
-	const String default_renderer = "gl_compatibility";
-#elif defined(ANDROID_ENABLED)
-	// Use more suitable rendering method by default.
-	const String default_renderer = "mobile";
-#else
-	const String default_renderer = "forward_plus";
-#endif
-	EDITOR_SETTING_BASIC(Variant::STRING, PROPERTY_HINT_ENUM, "project_manager/default_renderer", default_renderer, "forward_plus,mobile,gl_compatibility")
-
 #undef EDITOR_SETTING
 #undef EDITOR_SETTING_BASIC
 #undef EDITOR_SETTING_USAGE
@@ -1290,7 +1263,6 @@ void EditorSettings::_handle_setting_compatibility() {
 	_rename_setting("interface/editor/custom_display_scale", "interface/editor/appearance/custom_display_scale");
 	_rename_setting("interface/editor/editor_screen", "interface/editor/appearance/editor_screen");
 	_rename_setting("interface/editor/tablet_driver", "interface/editor/input/tablet_driver");
-	_rename_setting("interface/editor/project_manager_screen", "interface/editor/appearance/project_manager_screen");
 	_rename_setting("interface/editor/use_embedded_menu", "interface/editor/appearance/use_embedded_menu");
 	_rename_setting("interface/editor/use_native_file_dialogs", "interface/editor/appearance/use_native_file_dialogs");
 	_rename_setting("interface/editor/expand_to_title", "interface/editor/appearance/expand_to_title");
