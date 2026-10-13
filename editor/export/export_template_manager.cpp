@@ -1266,12 +1266,6 @@ void ExportTemplateManager::_notification(int p_what) {
 			EditorNode::get_bottom_panel()->get_progress_indicator()->connect("clicked", callable_mp(this, &ExportTemplateManager::popup_manager));
 		} break;
 
-		case EditorSettings::NOTIFICATION_EDITOR_SETTINGS_CHANGED: {
-			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/touchscreen")) {
-				center_split->set_touch_dragger_enabled(EDITOR_GET("interface/touchscreen/enable_touch_optimizations"));
-			}
-		} break;
-
 		case NOTIFICATION_TRANSLATION_CHANGED: {
 			if (template_data.is_empty()) {
 				break;
@@ -1417,7 +1411,6 @@ ExportTemplateManager::ExportTemplateManager() {
 
 	center_split = memnew(VSplitContainer);
 	center_split->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	center_split->set_touch_dragger_enabled(EDITOR_GET("interface/touchscreen/enable_touch_optimizations"));
 	main_split->add_child(center_split);
 
 	VBoxContainer *available_templates_container = memnew(VBoxContainer);

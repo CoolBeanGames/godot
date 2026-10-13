@@ -679,12 +679,6 @@ void ProjectSettingsEditor::_notification(int p_what) {
 		case NOTIFICATION_THEME_CHANGED: {
 			_update_theme();
 		} break;
-
-		case EditorSettings::NOTIFICATION_EDITOR_SETTINGS_CHANGED: {
-			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/touchscreen")) {
-				general_settings_inspector->set_touch_dragger_enabled(EDITOR_GET("interface/touchscreen/enable_touch_optimizations"));
-			}
-		} break;
 	}
 }
 
@@ -777,10 +771,6 @@ ProjectSettingsEditor::ProjectSettingsEditor(EditorData *p_data) {
 	general_settings_inspector->get_inspector()->connect("property_deleted", callable_mp(this, &ProjectSettingsEditor::_on_editor_override_deleted));
 	general_settings_inspector->get_inspector()->connect("restart_requested", callable_mp(this, &ProjectSettingsEditor::_editor_restart_request));
 	general_editor->add_child(general_settings_inspector);
-
-	if (EDITOR_GET("interface/touchscreen/enable_touch_optimizations")) {
-		general_settings_inspector->set_touch_dragger_enabled(true);
-	}
 
 	restart_container = memnew(PanelContainer);
 	general_editor->add_child(restart_container);

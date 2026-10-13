@@ -112,6 +112,11 @@ TEST_SUITE("Crete removals") {
 		CHECK_FALSE(ClassDB::has_integer_constant("EditorFeatureProfile", "FEATURE_ASSET_LIB"));
 		CHECK(ClassDB::has_integer_constant("EditorFeatureProfile", "FEATURE_GAME"));
 	}
+
+	// NOTE: editor/project settings absence is verified by the binary string
+	// check (see CRETE.md), not here: EditorSettings::create() loads the
+	// machine's persisted editor_settings file, so has_setting() reflects
+	// local user state, not the code's registrations.
 }
 
 } // namespace TestCreteRemovals

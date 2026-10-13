@@ -124,3 +124,24 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   **1374 passed, 0 failed, 3 skipped; 356,513 assertions. Status: SUCCESS.**
   Binary string scan: 10/10 removed strings absent (`FEATURE_ASSET_LIB`
   appears only inside the absence test itself), `AssetStore` icon kept.
+
+## Step 6: touchscreen editor UI removed, core input untouched (DONE)
+
+- Deleted `TouchActionsPanel` + its Android-gated editor_node wiring; removed
+  all 6 `interface/touchscreen/*` editor settings and every reader
+  (touch draggers, theme touch branches, gizmo scaling, curve editor radii).
+- `emulate_touch_from_mouse` already defaults off upstream (verified, kept);
+  `InputEventScreenTouch/Drag` and `SplitContainer` touch API stay (core).
+- Dead mobile project settings removed: `display/window/handheld/`,
+  `display/window/frame_pacing/android/*`, `display/window/ios/*`,
+  `input_devices/pointing/android/*`, `audio/general/ios/*`,
+  `rendering/scaling_3d/mode.{ios,macos}`, blender/fbx2gltf
+  `.enabled.android` overrides (+ class docs); `/android/` dropped from the
+  VCS .gitignore template.
+- Tests: no doctest (settings absence is unverifiable in-process:
+  `EditorSettings::create()` loads the machine's persisted settings file, so
+  `has_setting()` reflects user state, not code). All removals verified via
+  binary string scan instead.
+- Results: build DONE with 0 errors; focused suite 9/9 passed; full suite
+  **1374 passed, 0 failed, 3 skipped; 356,513 assertions. Status: SUCCESS.**
+  Binary string scan: 0 leaks on 26 removed strings.

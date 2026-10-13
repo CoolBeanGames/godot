@@ -200,10 +200,6 @@
 #include "servers/physics_3d/physics_server_3d.h"
 #endif // PHYSICS_3D_DISABLED
 
-#ifdef ANDROID_ENABLED
-#include "editor/gui/touch_actions_panel.h"
-#endif // ANDROID_ENABLED
-
 #include "modules/modules_enabled.gen.h" // For gdscript, mono.
 
 #include <cstdlib>
@@ -1162,11 +1158,6 @@ void EditorNode::_notification(int p_what) {
 #if defined(MODULE_GDSCRIPT_ENABLED) || defined(MODULE_MONO_ENABLED)
 			if (EditorSettings::get_singleton()->check_changed_settings_in_group("text_editor/theme/highlighting")) {
 				EditorHelpHighlighter::get_singleton()->reset_cache();
-			}
-#endif
-#ifdef ANDROID_ENABLED
-			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/touchscreen/touch_actions_panel")) {
-				_touch_actions_panel_mode_changed();
 			}
 #endif
 		} break;
@@ -8126,8 +8117,6 @@ void EditorNode::_update_main_menu_type() {
 		memdelete(main_menu_button);
 		main_menu_button = nullptr;
 	}
-	memdelete_notnull(menu_btn_spacer);
-	menu_btn_spacer = nullptr;
 
 	// Create new menu.
 	if (new_menu_type == MENU_TYPE_COMPACT) {
@@ -8146,19 +8135,8 @@ void EditorNode::_update_main_menu_type() {
 			}
 		}
 
-#ifdef ANDROID_ENABLED
-		// Align main menu icon visually with TouchActionsPanel buttons.
-		menu_btn_spacer = memnew(Control);
-		menu_btn_spacer->set_custom_minimum_size(Vector2(8, 0) * EDSCALE);
-		title_bar->add_child(menu_btn_spacer);
-		title_bar->move_child(menu_btn_spacer, left_menu_spacer ? left_menu_spacer->get_index() + 1 : 0);
-#endif
 		title_bar->add_child(main_menu_button);
-		if (menu_btn_spacer == nullptr) {
-			title_bar->move_child(main_menu_button, left_menu_spacer ? left_menu_spacer->get_index() + 1 : 0);
-		} else {
-			title_bar->move_child(main_menu_button, menu_btn_spacer->get_index() + 1);
-		}
+		title_bar->move_child(main_menu_button, left_menu_spacer ? left_menu_spacer->get_index() + 1 : 0);
 	} else {
 		main_menu_bar = memnew(MenuBar);
 		main_menu_bar->set_mouse_filter(Control::MOUSE_FILTER_STOP);
@@ -8187,34 +8165,6 @@ void EditorNode::_update_main_menu_type() {
 void EditorNode::_bottom_panel_resized() {
 	bottom_panel->set_bottom_panel_offset(center_split->get_split_offset());
 }
-
-#ifdef ANDROID_ENABLED
-void EditorNode::_touch_actions_panel_mode_changed() {
-	int panel_mode = EDITOR_GET("interface/touchscreen/touch_actions_panel");
-	switch (panel_mode) {
-		case 1:
-			if (touch_actions_panel != nullptr) {
-				touch_actions_panel->queue_free();
-			}
-			touch_actions_panel = memnew(TouchActionsPanel);
-			main_hbox->call_deferred("add_child", touch_actions_panel);
-			break;
-		case 2:
-			if (touch_actions_panel != nullptr) {
-				touch_actions_panel->queue_free();
-			}
-			touch_actions_panel = memnew(TouchActionsPanel);
-			call_deferred("add_child", touch_actions_panel);
-			break;
-		case 0:
-			if (touch_actions_panel != nullptr) {
-				touch_actions_panel->queue_free();
-				touch_actions_panel = nullptr;
-			}
-			break;
-	}
-}
-#endif
 
 #ifdef MACOS_ENABLED
 extern "C" GameViewPluginBase *get_game_view_plugin();
@@ -8568,28 +8518,10 @@ EditorNode::EditorNode() {
 
 	main_vbox = memnew(VBoxContainer);
 
-#ifdef ANDROID_ENABLED
-	base_vbox = memnew(VBoxContainer);
-	base_vbox->set_anchors_and_offsets_preset(Control::PRESET_FULL_RECT, Control::PRESET_MODE_MINSIZE, theme->get_constant(SNAME("window_border_margin"), EditorStringName(Editor)));
-
-	title_bar = memnew(EditorTitleBar);
-	base_vbox->add_child(title_bar);
-
-	main_hbox = memnew(HBoxContainer);
-	main_hbox->add_child(main_vbox);
-	main_vbox->set_h_size_flags(Control::SIZE_EXPAND_FILL);
-	main_hbox->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	base_vbox->add_child(main_hbox);
-
-	_touch_actions_panel_mode_changed();
-
-	gui_base->add_child(base_vbox);
-#else
 	gui_base->add_child(main_vbox);
 
 	title_bar = memnew(EditorTitleBar);
 	main_vbox->add_child(title_bar);
-#endif
 
 	DockSplitContainer *main_vsplit = memnew(DockSplitContainer);
 	main_vsplit->set_name("DockVSplitMain");

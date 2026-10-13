@@ -7214,23 +7214,6 @@ void Node3DEditorViewportContainer::_update_split_drag_margin() {
 	}
 }
 
-void Node3DEditorViewportContainer::_notification(int p_what) {
-	switch (p_what) {
-		case EditorSettings::NOTIFICATION_EDITOR_SETTINGS_CHANGED: {
-			if (!EditorSettings::get_singleton()->check_changed_settings_in_group("interface/touchscreen")) {
-				return;
-			}
-			[[fallthrough]];
-		}
-		case NOTIFICATION_READY: {
-			bool touch_optimizations = EDITOR_GET("interface/touchscreen/enable_touch_optimizations");
-			main_split->set_touch_dragger_enabled(touch_optimizations);
-			first_split->set_touch_dragger_enabled(touch_optimizations);
-			second_split->set_touch_dragger_enabled(touch_optimizations);
-		} break;
-	}
-}
-
 void Node3DEditorViewportContainer::set_view(View p_view) {
 	view = p_view;
 

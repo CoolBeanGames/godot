@@ -104,10 +104,6 @@ class ProjectSettingsEditor;
 class SceneImportSettingsDialog;
 class ProjectUpgradeTool;
 
-#ifdef ANDROID_ENABLED
-class TouchActionsPanel;
-#endif
-
 struct EditorProgress {
 	String task;
 	bool force_background = false;
@@ -288,13 +284,6 @@ private:
 	VBoxContainer *main_vbox = nullptr;
 	OptionButton *renderer = nullptr;
 
-#ifdef ANDROID_ENABLED
-	VBoxContainer *base_vbox = nullptr; // It only contains the title_bar and main_hbox.
-	HBoxContainer *main_hbox = nullptr; // It only contains the touch_actions_panel and main_vbox.
-	TouchActionsPanel *touch_actions_panel = nullptr;
-	void _touch_actions_panel_mode_changed();
-#endif
-
 	ConfirmationDialog *video_restart_dialog = nullptr;
 
 	// Split containers.
@@ -332,7 +321,6 @@ private:
 	HBoxContainer *left_spacer = nullptr;
 	Control *right_spacer = nullptr;
 
-	Control *menu_btn_spacer = nullptr;
 	MenuButton *main_menu_button = nullptr;
 	MenuBar *main_menu_bar = nullptr;
 

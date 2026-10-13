@@ -79,7 +79,6 @@ void initialize_fbx_module(ModuleInitializationLevel p_level) {
 
 		GLOBAL_DEF_RST_BASIC("filesystem/import/fbx2gltf/enabled", true);
 		GDREGISTER_CLASS(EditorSceneFormatImporterFBX2GLTF);
-		GLOBAL_DEF_RST("filesystem/import/fbx2gltf/enabled.android", false);
 		GLOBAL_DEF_RST("filesystem/import/fbx2gltf/enabled.web", false);
 
 		EditorNode::add_init_callback(_editor_init);

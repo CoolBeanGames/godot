@@ -50,17 +50,6 @@
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-void DockSplitContainer::_notification(int p_what) {
-	switch (p_what) {
-		case EditorSettings::NOTIFICATION_EDITOR_SETTINGS_CHANGED: {
-			if (!EditorSettings::get_singleton()->check_changed_settings_in_group("interface/touchscreen")) {
-				return;
-			}
-			set_touch_dragger_enabled(EDITOR_GET("interface/touchscreen/enable_touch_optimizations"));
-		} break;
-	}
-}
-
 void DockSplitContainer::_update_visibility() {
 	if (is_updating) {
 		return;
@@ -128,9 +117,6 @@ Control *DockSplitContainer::get_child_as_control(int p_index) const {
 }
 
 DockSplitContainer::DockSplitContainer() {
-	if (EDITOR_GET("interface/touchscreen/enable_touch_optimizations")) {
-		callable_mp((SplitContainer *)this, &SplitContainer::set_touch_dragger_enabled).call_deferred(true);
-	}
 	set_drag_nested_intersections(true);
 }
 

@@ -483,13 +483,6 @@
 			The default value is set to [b]Sample[/b] as the Web platform is not suited to mix audio streams outside of the Web Audio API, especially when exporting a single-threaded game. [b]Sample[/b] allows for lower latency on the web platform at the cost of flexibility ([AudioEffect]s are not supported).
 			[b]Warning:[/b] Forcing [b]Stream[/b] on the Web platform may cause high audio latency and crackling, especially when exporting a multi-threaded game.
 		</member>
-		<member name="audio/general/ios/mix_with_others" type="bool" setter="" getter="" default="false">
-			Sets the [url=https://developer.apple.com/documentation/avfaudio/avaudiosession/categoryoptions/1616611-mixwithothers]mixWithOthers[/url] option for the AVAudioSession on iOS. This will override the mix behavior, if the category is set to [code]Play and Record[/code], [code]Playback[/code], or [code]Multi Route[/code].
-			[code]Ambient[/code] always has this set per default.
-		</member>
-		<member name="audio/general/ios/session_category" type="int" setter="" getter="" default="0" keywords="ambient, play, record, solo">
-			Sets the [url=https://developer.apple.com/documentation/avfaudio/avaudiosessioncategory]AVAudioSessionCategory[/url] on iOS. Use the [code]Playback[/code] category to get sound output, even if the phone is in silent mode.
-		</member>
 		<member name="audio/general/text_to_speech" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], text-to-speech support is enabled on startup, otherwise it is enabled the first time any TTS method is used. See also [method DisplayServer.tts_get_voices] and [method DisplayServer.tts_speak].
 			[b]Note:[/b] Enabling TTS can cause additional idle CPU usage and interfere with the sleep mode, so consider disabling it if TTS is not used.
@@ -954,37 +947,9 @@
 		<member name="display/window/energy_saving/keep_screen_on" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], keeps the screen on (even in case of inactivity), so the screensaver does not take over. Works on desktop and mobile platforms.
 		</member>
-		<member name="display/window/frame_pacing/android/enable_frame_pacing" type="bool" setter="" getter="" default="true">
-			Enable Swappy for stable frame pacing on Android. Highly recommended.
-			[b]Note:[/b] This option will be forced off when using OpenXR.
-		</member>
-		<member name="display/window/frame_pacing/android/swappy_mode" type="int" setter="" getter="" default="2" keywords="pipeline">
-			Swappy mode to use. The options are:
-			- [code]pipeline_forced_on[/code]: Try to honor [member Engine.max_fps]. Pipelining is always on. This is the same behavior as a desktop PC.
-			- [code]auto_fps_pipeline_forced_on[/code]: Calculate the max FPS automatically. The actual max FPS will be between [code]0[/code] and [member Engine.max_fps]. While this sounds convenient, beware that Swappy will often downgrade the max FPS until it finds a value that can be maintained. That means, if your game runs between 40fps and 60fps on a 60hz screen, after some time Swappy will downgrade the max FPS so that the game renders at a perfect 30fps.
-			- [code]auto_fps_auto_pipeline[/code]: Same as [code]auto_fps_pipeline_forced_on[/code], but if Swappy detects that rendering is very fast (for example it takes less than 8ms to render on a 60hz screen), Swappy will disable pipelining to minimize input latency. This is the default.
-			[b]Note:[/b] If [member Engine.max_fps] is [code]0[/code], the actual max FPS will be considered to be the screen's refresh rate (often 60hz, 90hz, or 120hz, depending on device model and OS settings).
-		</member>
-		<member name="display/window/handheld/orientation" type="int" setter="" getter="" default="0" keywords="landscape, portrait, sensor, reverse">
-			The default screen orientation to use on mobile devices. See [enum DisplayServer.ScreenOrientation] for possible values.
-			[b]Note:[/b] When set to a portrait orientation, this project setting does not flip the project resolution's width and height automatically. Instead, you have to set [member display/window/size/viewport_width] and [member display/window/size/viewport_height] accordingly.
-		</member>
 		<member name="display/window/hdr/request_hdr_output" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], HDR output is requested for the main window and the editor. The main window and editor will automatically switch between HDR and SDR if it is moved between screens, screen capabilities change, or system settings are modified. This will internally force [member Viewport.use_hdr_2d] to be enabled on the main [Viewport]. All other [SubViewport] of the [Window] must have their [member Viewport.use_hdr_2d] property enabled to produce HDR output.
 			[b]Note:[/b] This property is only read when the project starts. To change this property at runtime, set [member Window.hdr_output_requested].
-		</member>
-		<member name="display/window/ios/allow_high_refresh_rate" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], iOS devices that support high refresh rate/"ProMotion" will be allowed to render at up to 120 frames per second.
-		</member>
-		<member name="display/window/ios/hide_home_indicator" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], the home indicator is hidden automatically. This only affects iOS devices without a physical home button.
-		</member>
-		<member name="display/window/ios/hide_status_bar" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], the status bar is hidden while the app is running.
-		</member>
-		<member name="display/window/ios/suppress_ui_gesture" type="bool" setter="" getter="" default="true">
-			If [code]true[/code], it will require two swipes to access iOS UI that uses gestures.
-			[b]Note:[/b] This setting has no effect on the home indicator if [code]hide_home_indicator[/code] is [code]true[/code].
 		</member>
 		<member name="display/window/per_pixel_transparency/allowed" type="bool" setter="" getter="" default="false">
 			If [code]true[/code], allows per-pixel transparency for the window background. This affects performance, so leave it on [code]false[/code] unless you need it. See also [member display/window/size/transparent] and [member rendering/viewport/transparent_background].
@@ -1199,18 +1164,12 @@
 			If [code]true[/code], Blender 3D scene files with the [code].blend[/code] extension will be imported by converting them to glTF 2.0.
 			This requires configuring a path to a Blender executable in the [member EditorSettings.filesystem/import/blender/blender_path] setting. Blender 3.0 or later is required.
 		</member>
-		<member name="filesystem/import/blender/enabled.android" type="bool" setter="" getter="" default="false">
-			Override for [member filesystem/import/blender/enabled] on Android where Blender can't easily be accessed from Godot.
-		</member>
 		<member name="filesystem/import/blender/enabled.web" type="bool" setter="" getter="" default="false">
 			Override for [member filesystem/import/blender/enabled] on the Web where Blender can't easily be accessed from Godot.
 		</member>
 		<member name="filesystem/import/fbx2gltf/enabled" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], Autodesk FBX 3D scene files with the [code].fbx[/code] extension will be imported by converting them to glTF 2.0.
 			This requires configuring a path to an FBX2glTF executable in the editor settings at [member EditorSettings.filesystem/import/fbx/fbx2gltf_path].
-		</member>
-		<member name="filesystem/import/fbx2gltf/enabled.android" type="bool" setter="" getter="" default="false">
-			Override for [member filesystem/import/fbx2gltf/enabled] on Android where FBX2glTF can't easily be accessed from Godot.
 		</member>
 		<member name="filesystem/import/fbx2gltf/enabled.web" type="bool" setter="" getter="" default="false">
 			Override for [member filesystem/import/fbx2gltf/enabled] on the Web where FBX2glTF can't easily be accessed from Godot.
@@ -1667,21 +1626,6 @@
 			- [code]winink[/code], uses Windows native "Windows Ink" driver.
 			- [code]wintab[/code], uses Wacom "WinTab" driver.
 			- [code]dummy[/code], tablet input is disabled.
-		</member>
-		<member name="input_devices/pointing/android/disable_scroll_deadzone" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], disables the scroll deadzone on Android, allowing even very small scroll movements to be registered. This may increase scroll sensitivity but can also lead to unintended scrolling from slight finger movements.
-		</member>
-		<member name="input_devices/pointing/android/enable_long_press_as_right_click" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], long press events on an Android touchscreen are transformed into right click events.
-		</member>
-		<member name="input_devices/pointing/android/enable_pan_and_scale_gestures" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], multi-touch pan and scale gestures are enabled on Android devices.
-		</member>
-		<member name="input_devices/pointing/android/override_volume_buttons" type="bool" setter="" getter="" default="false">
-			If [code]true[/code], system volume changes are disabled when the buttons are used within the app.
-		</member>
-		<member name="input_devices/pointing/android/rotary_input_scroll_axis" type="int" setter="" getter="" default="1">
-			On Wear OS devices, defines which axis of the mouse wheel rotary input is mapped to. This rotary input is usually performed by rotating the physical or virtual (touch-based) bezel on a smartwatch.
 		</member>
 		<member name="input_devices/pointing/emulate_mouse_from_touch" type="bool" setter="" getter="" default="true">
 			If [code]true[/code], sends mouse input events when tapping or swiping on the touchscreen.
@@ -3356,12 +3300,6 @@
 		<member name="rendering/scaling_3d/mode" type="int" setter="" getter="" default="0">
 			Sets the scaling 3D mode. Bilinear scaling renders at different resolution to either undersample or supersample the viewport. FidelityFX Super Resolution 1.0, abbreviated to FSR, is an upscaling technology that produces high quality images at fast framerates by using a spatially-aware upscaling algorithm. FSR is slightly more expensive than bilinear, but it produces significantly higher image quality. On particularly low-end GPUs, the added cost of FSR may not be worth it (compared to using bilinear scaling with a slightly higher resolution scale to match performance).
 			[b]Note:[/b] FSR is only effective when using the Forward+ rendering method, not Mobile or Compatibility. If using an incompatible rendering method, FSR will fall back to bilinear scaling.
-		</member>
-		<member name="rendering/scaling_3d/mode.ios" type="int" setter="" getter="">
-			iOS override for [member rendering/scaling_3d/mode]. This allows selecting the MetalFX spatial and MetalFX temporal scaling modes, which are exclusive to platforms where the Metal rendering driver is used.
-		</member>
-		<member name="rendering/scaling_3d/mode.macos" type="int" setter="" getter="">
-			macOS override for [member rendering/scaling_3d/mode]. This allows selecting the MetalFX spatial and MetalFX temporal scaling modes, which are exclusive to platforms where the Metal rendering driver is used.
 		</member>
 		<member name="rendering/scaling_3d/scale" type="float" setter="" getter="" default="1.0">
 			Scales the 3D render buffer based on the viewport size uses an image filter specified in [member rendering/scaling_3d/mode] to scale the output image to the full viewport size. Values lower than [code]1.0[/code] can be used to speed up 3D rendering at the cost of quality (undersampling). Values greater than [code]1.0[/code] are only valid for bilinear mode and can be used to improve 3D rendering quality at a high performance cost (supersampling). See also [member rendering/anti_aliasing/quality/msaa_3d] for multi-sample antialiasing, which is significantly cheaper but only smooths the edges of polygons.

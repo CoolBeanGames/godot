@@ -111,12 +111,6 @@ void ProjectExportDialog::_notification(int p_what) {
 			}
 		} break;
 
-		case EditorSettings::NOTIFICATION_EDITOR_SETTINGS_CHANGED: {
-			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/touchscreen")) {
-				main_split->set_touch_dragger_enabled(EDITOR_GET("interface/touchscreen/enable_touch_optimizations"));
-			}
-		} break;
-
 		case NOTIFICATION_THEME_CHANGED: {
 			_script_encryption_key_visibility_changed(show_script_key->is_pressed());
 
@@ -1558,7 +1552,6 @@ ProjectExportDialog::ProjectExportDialog() {
 	main_split = memnew(HSplitContainer);
 	main_vb->add_child(main_split);
 	main_split->set_v_size_flags(Control::SIZE_EXPAND_FILL);
-	main_split->set_touch_dragger_enabled(EDITOR_GET("interface/touchscreen/enable_touch_optimizations"));
 
 	// Presets list.
 

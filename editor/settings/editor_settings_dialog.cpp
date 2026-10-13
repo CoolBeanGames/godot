@@ -304,10 +304,6 @@ void EditorSettingsDialog::_notification(int p_what) {
 			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/localization/localize_settings")) {
 				inspector->update_category_list();
 			}
-
-			if (EditorSettings::get_singleton()->check_changed_settings_in_group("interface/touchscreen")) {
-				inspector->set_touch_dragger_enabled(EDITOR_GET("interface/touchscreen/enable_touch_optimizations"));
-			}
 		} break;
 	}
 }
@@ -1001,10 +997,6 @@ EditorSettingsDialog::EditorSettingsDialog() {
 	inspector->set_v_size_flags(Control::SIZE_EXPAND_FILL);
 	tab_general->add_child(inspector);
 	inspector->get_inspector()->connect("restart_requested", callable_mp(this, &EditorSettingsDialog::_editor_restart_request));
-
-	if (EDITOR_GET("interface/touchscreen/enable_touch_optimizations")) {
-		inspector->set_touch_dragger_enabled(true);
-	}
 
 	restart_container = memnew(PanelContainer);
 	tab_general->add_child(restart_container);

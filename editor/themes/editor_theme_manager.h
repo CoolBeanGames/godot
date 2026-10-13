@@ -75,8 +75,6 @@ public:
 		float relationship_line_opacity = 1.0;
 		int thumb_size = 16;
 		int class_icon_size = 16;
-		bool enable_touch_optimizations = false;
-		float gizmo_handle_scale = 1.0;
 		int inspector_property_height = 28;
 		float subresource_hue_tint = 0.0;
 		float dragging_hover_wait_msec = 0;

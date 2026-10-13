@@ -586,9 +586,6 @@ private:
 
 	void _update_split_drag_margin();
 
-protected:
-	void _notification(int p_what);
-
 public:
 	void set_view(View p_view);
 	View get_view();

@@ -51,29 +51,7 @@ Ref<DPITexture> editor_generate_icon(int p_index, float p_scale, float p_saturat
 	return DPITexture::create_from_string(editor_icons_sources[p_index], p_scale, p_saturation, p_convert_colors);
 }
 
-float get_gizmo_handle_scale(const String &p_gizmo_handle_name, float p_gizmo_handle_scale) {
-	if (p_gizmo_handle_scale > 1.0f) {
-		// The names of the icons that require additional scaling.
-		static HashSet<StringName> gizmo_to_scale;
-		if (gizmo_to_scale.is_empty()) {
-			gizmo_to_scale.insert("EditorHandle");
-			gizmo_to_scale.insert("EditorHandleAdd");
-			gizmo_to_scale.insert("EditorHandleDisabled");
-			gizmo_to_scale.insert("EditorCurveHandle");
-			gizmo_to_scale.insert("EditorPathSharpHandle");
-			gizmo_to_scale.insert("EditorPathSmoothHandle");
-			gizmo_to_scale.insert("EditorControlAnchor");
-		}
-
-		if (gizmo_to_scale.has(p_gizmo_handle_name)) {
-			return EDSCALE * p_gizmo_handle_scale;
-		}
-	}
-
-	return EDSCALE;
-}
-
-void editor_register_icons(const Ref<Theme> &p_theme, bool p_dark_theme, float p_icon_saturation, int p_thumb_size, float p_gizmo_handle_scale) {
+void editor_register_icons(const Ref<Theme> &p_theme, bool p_dark_theme, float p_icon_saturation, int p_thumb_size) {
 	// Before we register the icons, we adjust their colors and saturation.
 	// Most icons follow the standard rules for color conversion to follow the editor
 	// theme's polarity (dark/light). We also adjust the saturation for most icons,
@@ -140,7 +118,7 @@ void editor_register_icons(const Ref<Theme> &p_theme, bool p_dark_theme, float p
 			const String &editor_icon_name = editor_icons_names[i];
 			Ref<DPITexture> icon;
 			if (accent_color_icons.has(editor_icon_name)) {
-				icon = editor_generate_icon(i, get_gizmo_handle_scale(editor_icon_name, p_gizmo_handle_scale), 1.0, accent_color_map);
+				icon = editor_generate_icon(i, EDSCALE, 1.0, accent_color_map);
 			} else {
 				float saturation = p_icon_saturation;
 				if (saturation_exceptions.has(editor_icon_name)) {
@@ -148,9 +126,9 @@ void editor_register_icons(const Ref<Theme> &p_theme, bool p_dark_theme, float p
 				}
 
 				if (conversion_exceptions.has(editor_icon_name)) {
-					icon = editor_generate_icon(i, get_gizmo_handle_scale(editor_icon_name, p_gizmo_handle_scale), saturation);
+					icon = editor_generate_icon(i, EDSCALE, saturation);
 				} else {
-					icon = editor_generate_icon(i, get_gizmo_handle_scale(editor_icon_name, p_gizmo_handle_scale), saturation, color_conversion_map);
+					icon = editor_generate_icon(i, EDSCALE, saturation, color_conversion_map);
 				}
 			}
 

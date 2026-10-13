@@ -78,8 +78,6 @@ uint32_t EditorThemeManager::ThemeConfiguration::hash() {
 	hash = hash_murmur3_one_float(relationship_line_opacity, hash);
 	hash = hash_murmur3_one_32(thumb_size, hash);
 	hash = hash_murmur3_one_32(class_icon_size, hash);
-	hash = hash_murmur3_one_32((int)enable_touch_optimizations, hash);
-	hash = hash_murmur3_one_float(gizmo_handle_scale, hash);
 	hash = hash_murmur3_one_32(inspector_property_height, hash);
 	hash = hash_murmur3_one_float(subresource_hue_tint, hash);
 
@@ -108,7 +106,6 @@ uint32_t EditorThemeManager::ThemeConfiguration::hash_icons() {
 	hash = hash_murmur3_one_float(icon_saturation, hash);
 
 	hash = hash_murmur3_one_32(thumb_size, hash);
-	hash = hash_murmur3_one_float(gizmo_handle_scale, hash);
 
 	hash = hash_murmur3_one_32((int)dark_icon_and_font, hash);
 
@@ -199,7 +196,7 @@ Ref<EditorTheme> EditorThemeManager::_create_base_theme(const Ref<EditorTheme> &
 			editor_copy_icons(theme, p_old_theme);
 		} else {
 			print_verbose("EditorTheme: Generating new icons.");
-			editor_register_icons(theme, config.dark_icon_and_font, config.icon_saturation, config.thumb_size, config.gizmo_handle_scale);
+			editor_register_icons(theme, config.dark_icon_and_font, config.icon_saturation, config.thumb_size);
 		}
 
 		OS::get_singleton()->benchmark_end_measure(get_benchmark_key(), "Register Icons");
@@ -264,8 +261,6 @@ EditorThemeManager::ThemeConfiguration EditorThemeManager::_create_theme_config(
 	config.relationship_line_opacity = EDITOR_GET("interface/theme/relationship_line_opacity");
 	config.thumb_size = EDITOR_GET("filesystem/file_dialog/thumbnail_size");
 	config.class_icon_size = 16 * EDSCALE;
-	config.enable_touch_optimizations = EDITOR_GET("interface/touchscreen/enable_touch_optimizations");
-	config.gizmo_handle_scale = EDITOR_GET("interface/touchscreen/scale_gizmo_handles");
 	config.subresource_hue_tint = EDITOR_GET("docks/property_editor/subresource_hue_tint");
 	config.dragging_hover_wait_msec = (float)EDITOR_GET("interface/editor/timers/dragging_hover_wait_seconds") * 1000;
 
@@ -715,7 +710,6 @@ bool EditorThemeManager::is_generated_theme_outdated() {
 		// TODO: We can use this information more intelligently to do partial theme updates and speed things up.
 		outdated_cache = EditorSettings::get_singleton()->check_changed_settings_in_group("interface/theme") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/editor/fonts") ||
-				EditorSettings::get_singleton()->check_changed_settings_in_group("interface/touchscreen/enable_touch_optimizations") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("editors/visual_editors") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("text_editor/theme") ||
 				EditorSettings::get_singleton()->check_changed_settings_in_group("text_editor/help/help") ||

@@ -160,8 +160,8 @@ enum {
 	SCREEN_OF_MAIN_WINDOW = -1, // Note: for the main window, determine screen from position.
 };
 
-// Keep the ScreenOrientation enum values in sync with the `display/window/handheld/orientation`
-// project setting hint.
+// Note: the `display/window/handheld/orientation` project setting was removed in
+// Crete; these values must still stay stable (public API).
 enum ScreenOrientation {
 	SCREEN_LANDSCAPE,
 	SCREEN_PORTRAIT,

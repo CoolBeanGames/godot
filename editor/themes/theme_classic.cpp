@@ -226,7 +226,6 @@ void ThemeClassic::populate_shared_styles(const Ref<EditorTheme> &p_theme, Edito
 
 		p_theme->set_constant("thumb_size", EditorStringName(Editor), p_config.thumb_size);
 		p_theme->set_constant("class_icon_size", EditorStringName(Editor), p_config.class_icon_size);
-		p_theme->set_constant("gizmo_handle_scale", EditorStringName(Editor), p_config.gizmo_handle_scale);
 
 		p_theme->set_constant("base_margin", EditorStringName(Editor), p_config.base_margin);
 		p_theme->set_constant("increased_margin", EditorStringName(Editor), p_config.increased_margin);
@@ -1113,7 +1112,7 @@ void ThemeClassic::populate_standard_styles(const Ref<EditorTheme> &p_theme, Edi
 			p_theme->set_icon("search", "PopupMenu", p_theme->get_icon(SNAME("Search"), EditorStringName(EditorIcons)));
 
 			p_theme->set_constant("h_separation", "PopupMenu", 4 * EDSCALE);
-			int v_sep = (p_config.enable_touch_optimizations ? 12 : p_config.forced_even_separation) * EDSCALE;
+			int v_sep = p_config.forced_even_separation * EDSCALE;
 			p_theme->set_constant("v_separation", "PopupMenu", v_sep);
 			p_theme->set_constant("search_bar_separation", "PopupMenu", v_sep);
 			p_theme->set_constant("outline_size", "PopupMenu", 0);
@@ -1128,11 +1127,7 @@ void ThemeClassic::populate_standard_styles(const Ref<EditorTheme> &p_theme, Edi
 
 		// HScrollBar.
 
-		if (p_config.enable_touch_optimizations) {
-			p_theme->set_stylebox("scroll", "HScrollBar", EditorThemeManager::make_line_stylebox(p_config.separator_color, 50));
-		} else {
-			p_theme->set_stylebox("scroll", "HScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, -5, 1, -5, 1));
-		}
+		p_theme->set_stylebox("scroll", "HScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, -5, 1, -5, 1));
 		p_theme->set_stylebox("scroll_focus", "HScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, 1, 1, 1));
 		p_theme->set_stylebox("grabber", "HScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollGrabber"), EditorStringName(EditorIcons)), 6, 6, 6, 6, 1, 1, 1, 1));
 		p_theme->set_stylebox("grabber_highlight", "HScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollGrabberHl"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, 1, 1, 1));
@@ -1147,11 +1142,7 @@ void ThemeClassic::populate_standard_styles(const Ref<EditorTheme> &p_theme, Edi
 
 		// VScrollBar.
 
-		if (p_config.enable_touch_optimizations) {
-			p_theme->set_stylebox("scroll", "VScrollBar", EditorThemeManager::make_line_stylebox(p_config.separator_color, 50, 1, 1, true));
-		} else {
-			p_theme->set_stylebox("scroll", "VScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, -5, 1, -5));
-		}
+		p_theme->set_stylebox("scroll", "VScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, -5, 1, -5));
 		p_theme->set_stylebox("scroll_focus", "VScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollBg"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, 1, 1, 1));
 		p_theme->set_stylebox("grabber", "VScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollGrabber"), EditorStringName(EditorIcons)), 6, 6, 6, 6, 1, 1, 1, 1));
 		p_theme->set_stylebox("grabber_highlight", "VScrollBar", EditorThemeManager::make_stylebox(p_theme->get_icon(SNAME("GuiScrollGrabberHl"), EditorStringName(EditorIcons)), 5, 5, 5, 5, 1, 1, 1, 1));

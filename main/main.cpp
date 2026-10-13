@@ -2783,9 +2783,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	}
 
 	{
-		window_orientation = DisplayServerEnums::ScreenOrientation(int(GLOBAL_DEF_BASIC("display/window/handheld/orientation", DisplayServerEnums::ScreenOrientation::SCREEN_LANDSCAPE)));
-	}
-	{
 		window_vsync_mode = DisplayServerEnums::VSyncMode(int(GLOBAL_DEF_BASIC("display/window/vsync/vsync_mode", DisplayServerEnums::VSyncMode::VSYNC_ENABLED)));
 		if (disable_vsync) {
 			window_vsync_mode = DisplayServerEnums::VSyncMode::VSYNC_DISABLED;
@@ -2812,11 +2809,6 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	if (audio_output_latency >= 1) {
 		Engine::get_singleton()->set_audio_output_latency(audio_output_latency);
 	}
-
-	GLOBAL_DEF("display/window/ios/allow_high_refresh_rate", true);
-	GLOBAL_DEF("display/window/ios/hide_home_indicator", true);
-	GLOBAL_DEF("display/window/ios/hide_status_bar", true);
-	GLOBAL_DEF("display/window/ios/suppress_ui_gesture", true);
 
 #ifndef _3D_DISABLED
 #ifdef MODULE_OPENXR_ENABLED // Crete: OpenXR module removed; these settings exist only when it is enabled.
