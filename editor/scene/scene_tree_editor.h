@@ -54,9 +54,8 @@ class SceneTreeEditor : public Control {
 		BUTTON_GROUP = 4,
 		BUTTON_WARNING = 5,
 		BUTTON_SIGNALS = 6,
-		BUTTON_GROUPS = 7,
-		BUTTON_PIN = 8,
-		BUTTON_UNIQUE = 9,
+		BUTTON_PIN = 7,
+		BUTTON_UNIQUE = 8,
 	};
 
 	struct CachedNode {

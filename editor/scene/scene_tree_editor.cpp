@@ -38,7 +38,6 @@
 #include "core/object/script_language.h"
 #include "editor/animation/animation_player_editor_plugin.h"
 #include "editor/docks/editor_dock_manager.h"
-#include "editor/docks/groups_dock.h"
 #include "editor/docks/signals_dock.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
@@ -204,13 +203,6 @@ void SceneTreeEditor::_cell_button_pressed(Object *p_item, int p_column, int p_i
 		set_selected(n);
 
 		EditorDockManager::get_singleton()->focus_dock(SignalsDock::get_singleton());
-	} else if (p_id == BUTTON_GROUPS) {
-		editor_selection->clear();
-		editor_selection->add_node(n);
-
-		set_selected(n);
-
-		EditorDockManager::get_singleton()->focus_dock(GroupsDock::get_singleton());
 	} else if (p_id == BUTTON_UNIQUE) {
 		bool ask_before_revoking_unique_name = EDITOR_GET("docks/scene_tree/ask_before_revoking_unique_name");
 		revoke_node = n;
@@ -531,47 +523,14 @@ void SceneTreeEditor::_update_node(Node *p_node, TreeItem *p_item, bool p_part_o
 		}
 
 		int num_connections = p_node->get_persistent_signal_connection_count();
-		int num_groups = p_node->get_persistent_group_count();
 
-		String msg_temp;
+		// Crete: group badges removed with the Groups dock (Step 7). Node
+		// group membership API is untouched; only the editor display is gone.
 		if (num_connections >= 1) {
 			Array arr = { num_connections };
-			msg_temp += TTRN("Node has one connection.", "Node has {num} connections.", num_connections).format(arr, "{num}");
-			if (num_groups >= 1) {
-				msg_temp += "\n";
-			}
-		}
-		if (num_groups >= 1) {
-			msg_temp += TTRN("Node is in this group:", "Node is in the following groups:", num_groups) + "\n";
-
-			List<GroupInfo> groups;
-			p_node->get_groups(&groups);
-			for (const GroupInfo &E : groups) {
-				if (E.persistent) {
-					msg_temp += String::utf8("•  ") + String(E.name) + "\n";
-				}
-			}
-		} else {
-			msg_temp += "\n";
-		}
-
-		Ref<Texture2D> icon_temp;
-		SceneTreeEditorButton signal_temp = BUTTON_SIGNALS;
-		String msg_temp_end = TTR("Click to show signals dock.");
-
-		if (num_connections >= 1 && num_groups >= 1) {
-			icon_temp = get_editor_theme_icon(SNAME("SignalsAndGroups"));
-		} else if (num_connections >= 1) {
-			icon_temp = get_editor_theme_icon(SNAME("Signals"));
-		} else if (num_groups >= 1) {
-			icon_temp = get_editor_theme_icon(SNAME("Groups"));
-			signal_temp = BUTTON_GROUPS;
-			msg_temp_end = TTR("Click to show groups dock.");
-		}
-
-		if (num_connections >= 1 || num_groups >= 1) {
-			msg_temp += msg_temp_end;
-			p_item->add_button(0, icon_temp, signal_temp, false, msg_temp);
+			String msg_temp = TTRN("Node has one connection.", "Node has {num} connections.", num_connections).format(arr, "{num}");
+			msg_temp += "\n" + TTR("Click to show signals dock.");
+			p_item->add_button(0, get_editor_theme_icon(SNAME("Signals")), BUTTON_SIGNALS, false, msg_temp);
 		}
 	}
 

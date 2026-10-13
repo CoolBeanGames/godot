@@ -56,7 +56,6 @@ const char *EditorFeatureProfile::feature_names[FEATURE_MAX] = {
 	TTRC("History Dock"),
 	TTRC("Game View"),
 	TTRC("Signals Dock"),
-	TTRC("Groups Dock"),
 };
 
 const char *EditorFeatureProfile::feature_descriptions[FEATURE_MAX] = {
@@ -71,7 +70,6 @@ const char *EditorFeatureProfile::feature_descriptions[FEATURE_MAX] = {
 	TTRC("Provides an overview of the editor's and each scene's undo history."),
 	TTRC("Provides tools for selecting and debugging nodes at runtime."),
 	TTRC("Allows to work with signals of the node selected in the Scene dock."),
-	TTRC("Allows to manage groups of the node selected in the Scene dock."),
 };
 
 const char *EditorFeatureProfile::feature_identifiers[FEATURE_MAX] = {
@@ -86,7 +84,6 @@ const char *EditorFeatureProfile::feature_identifiers[FEATURE_MAX] = {
 	"history_dock",
 	"game",
 	"signals_dock",
-	"groups_dock",
 };
 
 void EditorFeatureProfile::set_disable_class(const StringName &p_class, bool p_disabled) {
@@ -326,7 +323,6 @@ void EditorFeatureProfile::_bind_methods() {
 	BIND_ENUM_CONSTANT(FEATURE_HISTORY_DOCK);
 	BIND_ENUM_CONSTANT(FEATURE_GAME);
 	BIND_ENUM_CONSTANT(FEATURE_SIGNALS_DOCK);
-	BIND_ENUM_CONSTANT(FEATURE_GROUPS_DOCK);
 	BIND_ENUM_CONSTANT(FEATURE_MAX);
 }
 

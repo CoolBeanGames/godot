@@ -48,7 +48,6 @@
 
 void ProjectSettingsEditor::connect_filesystem_dock_signals(FileSystemDock *p_fs_dock) {
 	localization_editor->connect_filesystem_dock_signals(p_fs_dock);
-	group_settings->connect_filesystem_dock_signals(p_fs_dock);
 }
 
 void ProjectSettingsEditor::popup_project_settings(bool p_clear_filter) {
@@ -66,7 +65,6 @@ void ProjectSettingsEditor::popup_project_settings(bool p_clear_filter) {
 
 	localization_editor->update_translations();
 	autoload_settings->update_autoload();
-	group_settings->update_groups();
 	plugin_settings->update_plugins();
 	import_defaults_editor->clear();
 
@@ -416,8 +414,6 @@ void ProjectSettingsEditor::_focus_current_path_box() {
 		current_path_box = action_map_editor->get_path_box();
 	} else if (tab == shaders_global_shader_uniforms_editor) {
 		current_path_box = shaders_global_shader_uniforms_editor->get_name_box();
-	} else if (tab == group_settings) {
-		current_path_box = group_settings->get_name_box();
 	}
 
 	if (current_path_box) {
@@ -828,11 +824,6 @@ ProjectSettingsEditor::ProjectSettingsEditor(EditorData *p_data) {
 	shaders_global_shader_uniforms_editor->set_name(TTRC("Shader Globals"));
 	shaders_global_shader_uniforms_editor->connect("globals_changed", callable_mp(this, &ProjectSettingsEditor::queue_save));
 	globals_container->add_child(shaders_global_shader_uniforms_editor);
-
-	group_settings = memnew(GroupSettingsEditor);
-	group_settings->set_name(TTRC("Groups"));
-	group_settings->connect("group_changed", callable_mp(this, &ProjectSettingsEditor::queue_save));
-	globals_container->add_child(group_settings);
 
 	plugin_settings = memnew(EditorPluginSettings);
 	plugin_settings->set_name(TTRC("Plugins"));

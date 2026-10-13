@@ -14,6 +14,8 @@ Upstream base: `fde53e7e592324072533f1f5251235d81a9ccae4`.
 
 - `py -3.12 misc/scripts/install_accesskit.py` (screen-reader driver)
 - `py -3.12 misc/scripts/install_d3d12_sdk_windows.py` (D3D12 driver)
+- `py -3.12 misc/scripts/install_angle.py` (ANGLE/GL compat driver; without
+  it configure warns and (since Step 7) the warning is visible but harmless)
 
 Both install to `%LOCALAPPDATA%\Godot\build_deps`. Without them, configure
 fails and suggests `accesskit=no` / `d3d12=no`; Crete keeps both drivers.
@@ -145,3 +147,28 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
 - Results: build DONE with 0 errors; focused suite 9/9 passed; full suite
   **1374 passed, 0 failed, 3 skipped; 356,513 assertions. Status: SUCCESS.**
   Binary string scan: 0 leaks on 26 removed strings.
+
+## Step 7: Groups dock + Project Settings tab removed, group API kept (DONE)
+
+- Deleted `editor/docks/groups_dock.*`, `editor/docks/groups_editor.*`,
+  `editor/scene/group_settings_editor.*`; removed the dock from `EditorNode`
+  (creation, default `dock_5` layout, `_edit_current` refreshes,
+  feature-profile toggles) and the Groups tab from Project Settings.
+- Scene tree: removed the per-node group badges (`BUTTON_GROUPS` branch, group
+  icon/tooltip listing; `BUTTON_PIN`/`BUTTON_UNIQUE` renumbered to 7/8).
+  `BUTTON_GROUP` (children-selectable toggle) is unrelated and stays.
+- `FEATURE_GROUPS_DOCK` removed from `EditorFeatureProfile` (constants
+  renumbered, `FEATURE_MAX` now 9) + class doc. Profiles serialize by name,
+  so old files load fine.
+- `Node.add_to_group/remove_from_group/is_in_group` untouched: imported
+  projects keep working; Tags (Step 8) replace Groups in the UI.
+- Build tooling: `crete.build.ps1` now stringifies native stderr and judges
+  each step by `$LASTEXITCODE` (a bare ANGLE warning used to abort the
+  script under `$ErrorActionPreference='Stop'`).
+- Tests: 2 new cases (flag absent/signals present; group API intact). UI
+  absence verified via binary scan + extension-API dump (no ClassDB hook).
+- Results: build DONE with 0 errors; focused suite 11/11 passed; full suite
+  **1376 passed, 0 failed, 3 skipped; 356,516 assertions. Status: SUCCESS.**
+  Binary scan: 11/11 removed strings absent (`FEATURE_GROUPS_DOCK` occurs
+  2x, both inside the absence test's doctest strings), 5/5 kept strings
+  present. Extension-API dump: 0 removed refs.

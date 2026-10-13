@@ -113,6 +113,25 @@ TEST_SUITE("Crete removals") {
 		CHECK(ClassDB::has_integer_constant("EditorFeatureProfile", "FEATURE_GAME"));
 	}
 
+	TEST_CASE("Groups dock feature flag is absent") {
+		CHECK_FALSE(ClassDB::has_integer_constant("EditorFeatureProfile", "FEATURE_GROUPS_DOCK"));
+		CHECK(ClassDB::has_integer_constant("EditorFeatureProfile", "FEATURE_SIGNALS_DOCK"));
+	}
+
+	TEST_CASE("Node group membership API is intact") {
+		List<MethodInfo> methods;
+		ClassDB::get_method_list("Node", &methods, true);
+		bool has_add = false, has_remove = false, has_is_in = false;
+		for (const MethodInfo &mi : methods) {
+			has_add = has_add || mi.name == "add_to_group";
+			has_remove = has_remove || mi.name == "remove_from_group";
+			has_is_in = has_is_in || mi.name == "is_in_group";
+		}
+		CHECK_MESSAGE(has_add, "Node.add_to_group must survive the Groups dock removal.");
+		CHECK_MESSAGE(has_remove, "Node.remove_from_group must survive the Groups dock removal.");
+		CHECK_MESSAGE(has_is_in, "Node.is_in_group must survive the Groups dock removal.");
+	}
+
 	// NOTE: editor/project settings absence is verified by the binary string
 	// check (see CRETE.md), not here: EditorSettings::create() loads the
 	// machine's persisted editor_settings file, so has_setting() reflects

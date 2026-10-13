@@ -35,7 +35,6 @@
 #include "editor/import/import_defaults_editor.h"
 #include "editor/inspector/editor_sectioned_inspector.h"
 #include "editor/plugins/editor_plugin_settings.h"
-#include "editor/scene/group_settings_editor.h"
 #include "editor/settings/action_map_editor.h"
 #include "editor/settings/editor_autoload_settings.h"
 #include "editor/shader/shader_globals_editor.h"
@@ -69,7 +68,6 @@ class ProjectSettingsEditor : public AcceptDialog {
 	LocalizationEditor *localization_editor = nullptr;
 	EditorAutoloadSettings *autoload_settings = nullptr;
 	ShaderGlobalsEditor *shaders_global_shader_uniforms_editor = nullptr;
-	GroupSettingsEditor *group_settings = nullptr;
 	EditorPluginSettings *plugin_settings = nullptr;
 	ProjectSettingsGDExtension *gdextension_settings = nullptr;
 
@@ -149,7 +147,6 @@ public:
 	void set_filter(const String &p_filter);
 
 	EditorAutoloadSettings *get_autoload_settings() { return autoload_settings; }
-	GroupSettingsEditor *get_group_settings() { return group_settings; }
 	TabContainer *get_tabs() { return tab_container; }
 
 	void queue_save();
