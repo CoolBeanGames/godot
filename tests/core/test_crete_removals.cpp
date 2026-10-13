@@ -107,6 +107,11 @@ TEST_SUITE("Crete removals") {
 	// NOTE: setup()-registered project settings (xr/openxr/*, per-platform
 	// driver overrides) cannot be asserted here: --test runs before Main::setup().
 	// Their absence is verified by the binary string check (see CRETE.md).
+
+	TEST_CASE("Asset Store feature flag is absent") {
+		CHECK_FALSE(ClassDB::has_integer_constant("EditorFeatureProfile", "FEATURE_ASSET_LIB"));
+		CHECK(ClassDB::has_integer_constant("EditorFeatureProfile", "FEATURE_GAME"));
+	}
 }
 
 } // namespace TestCreteRemovals

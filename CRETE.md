@@ -106,3 +106,21 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
 - Results: build DONE with 0 errors; focused suite 8/8 passed; full suite
   **1373 passed, 0 failed, 3 skipped; 356,513 assertions. Status: SUCCESS.**
   Extension-API dump: 0 removed platform classes, 5 kept exporter classes.
+
+## Step 5: Asset Store removed (DONE)
+
+- Deleted `editor/asset_library/` (plugin + installer) and its SCsub entry;
+  removed tab registration, shortcut, main-screen enum, and feature-profile
+  flag (profiles serialize by name, so old files load fine).
+- Removed `asset_store/*` editor settings + compat shims, AssetLib theme
+  blocks/variations in both themes, the `AssetThumbLoading` icon (kept
+  `AssetStore.svg`: the template manager reuses it), and stale class docs
+  (feature constants renumbered).
+- Tests: `FEATURE_ASSET_LIB` absent / `FEATURE_GAME` present via ClassDB
+  constant list; AssetLib class/setting/shortcut strings verified absent
+  from the binary (the plugin classes were never GDREGISTER'd, so a
+  `class_exists` check would pass vacuously even on stock).
+- Results: build DONE with 0 errors; focused suite 9/9 passed; full suite
+  **1374 passed, 0 failed, 3 skipped; 356,513 assertions. Status: SUCCESS.**
+  Binary string scan: 10/10 removed strings absent (`FEATURE_ASSET_LIB`
+  appears only inside the absence test itself), `AssetStore` icon kept.

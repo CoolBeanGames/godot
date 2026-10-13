@@ -1835,13 +1835,6 @@ void ThemeClassic::populate_editor_styles(const Ref<EditorTheme> &p_theme, Edito
 			p_theme->set_color("icon_hover_color", "FlatButtonNoIconTint", p_config.mono_color);
 			p_theme->set_color("icon_hover_pressed_color", "FlatButtonNoIconTint", p_config.mono_color);
 
-			// Variation for the AssetLib thumbnails.
-
-			p_theme->set_type_variation("ThumbnailButton", SceneStringName(FlatButton));
-			p_theme->set_color("icon_pressed_color", "ThumbnailButton", p_config.icon_normal_color);
-			p_theme->set_color("icon_hover_color", "ThumbnailButton", p_config.icon_normal_color);
-			p_theme->set_color("icon_hover_pressed_color", "ThumbnailButton", p_config.icon_normal_color);
-
 			// Variation for Editor Log filter buttons.
 
 			p_theme->set_type_variation("FlatMenuButtonNoIconTint", "FlatMenuButton");
@@ -1880,28 +1873,6 @@ void ThemeClassic::populate_editor_styles(const Ref<EditorTheme> &p_theme, Edito
 			p_theme->set_color("icon_pressed_color", "CheckBoxNoIconTint", p_config.icon_normal_color);
 			p_theme->set_color("icon_hover_color", "CheckBoxNoIconTint", p_config.mono_color);
 			p_theme->set_color("icon_hover_pressed_color", "CheckBoxNoIconTint", p_config.mono_color);
-		}
-
-		// Buttons styles that stand out against the panel background (e.g. AssetLib).
-		{
-			p_theme->set_type_variation("PanelBackgroundButton", "Button");
-
-			Ref<StyleBoxFlat> panel_button_style = p_config.button_style->duplicate();
-			panel_button_style->set_bg_color(p_config.base_color.lerp(p_config.mono_color, 0.08));
-
-			Ref<StyleBoxFlat> panel_button_style_hover = p_config.button_style_hover->duplicate();
-			panel_button_style_hover->set_bg_color(p_config.base_color.lerp(p_config.mono_color, 0.16));
-
-			Ref<StyleBoxFlat> panel_button_style_pressed = p_config.button_style_pressed->duplicate();
-			panel_button_style_pressed->set_bg_color(p_config.base_color.lerp(p_config.mono_color, 0.20));
-
-			Ref<StyleBoxFlat> panel_button_style_disabled = p_config.button_style_disabled->duplicate();
-			panel_button_style_disabled->set_bg_color(p_config.disabled_bg_color);
-
-			p_theme->set_stylebox(CoreStringName(normal), "PanelBackgroundButton", panel_button_style);
-			p_theme->set_stylebox(SceneStringName(hover), "PanelBackgroundButton", panel_button_style_hover);
-			p_theme->set_stylebox(SceneStringName(pressed), "PanelBackgroundButton", panel_button_style_pressed);
-			p_theme->set_stylebox("disabled", "PanelBackgroundButton", panel_button_style_disabled);
 		}
 
 		// Top bar selectors.
@@ -2362,13 +2333,6 @@ void ThemeClassic::populate_editor_styles(const Ref<EditorTheme> &p_theme, Edito
 		p_theme->set_type_variation("EditorHelpBitTooltipTitle", "EditorHelpBitTitle");
 		p_theme->set_type_variation("EditorHelpBitTooltipContent", "EditorHelpBitContent");
 	}
-
-	// Asset Store.
-	p_theme->set_stylebox("bg", "AssetLib", p_config.base_empty_style);
-	p_theme->set_stylebox(SceneStringName(panel), "AssetLib", p_config.content_panel_style);
-	p_theme->set_stylebox("downloads", "AssetLib", p_theme->get_stylebox(SceneStringName(panel), SNAME("Tree")));
-	p_theme->set_color("faded_text", "AssetLib", p_config.font_disabled_color);
-	p_theme->set_icon("dismiss", "AssetLib", p_theme->get_icon(SNAME("Close"), EditorStringName(EditorIcons)));
 
 	// Debugger.
 	Ref<StyleBoxFlat> debugger_panel_style = p_config.content_panel_style->duplicate();

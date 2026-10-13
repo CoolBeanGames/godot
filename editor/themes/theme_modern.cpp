@@ -1897,13 +1897,6 @@ void ThemeModern::populate_editor_styles(const Ref<EditorTheme> &p_theme, Editor
 			p_theme->set_color("icon_hover_color", "FlatMenuButtonNoIconTint", p_config.mono_color);
 			p_theme->set_color("icon_hover_pressed_color", "FlatMenuButtonNoIconTint", p_config.mono_color);
 
-			// Variation for the AssetLib thumbnails.
-
-			p_theme->set_type_variation("ThumbnailButton", SceneStringName(FlatButton));
-			p_theme->set_color("icon_pressed_color", "ThumbnailButton", p_config.icon_normal_color);
-			p_theme->set_color("icon_hover_color", "ThumbnailButton", p_config.icon_normal_color);
-			p_theme->set_color("icon_hover_pressed_color", "ThumbnailButton", p_config.icon_normal_color);
-
 			// Variation for Editor Log filter buttons.
 
 			p_theme->set_type_variation("EditorLogFilterButton", "Button");
@@ -1929,28 +1922,6 @@ void ThemeModern::populate_editor_styles(const Ref<EditorTheme> &p_theme, Editor
 			p_theme->set_color("icon_pressed_color", "CheckBoxNoIconTint", p_config.icon_normal_color);
 			p_theme->set_color("icon_hover_color", "CheckBoxNoIconTint", p_config.mono_color);
 			p_theme->set_color("icon_hover_pressed_color", "CheckBoxNoIconTint", p_config.mono_color);
-		}
-
-		// Buttons styles that stand out against the panel background (e.g. AssetLib).
-		{
-			p_theme->set_type_variation("PanelBackgroundButton", "Button");
-
-			Ref<StyleBoxFlat> panel_button_style = p_config.button_style->duplicate();
-			panel_button_style->set_bg_color(p_config.base_color.lerp(p_config.mono_color, 0.08));
-
-			Ref<StyleBoxFlat> panel_button_style_hover = p_config.button_style_hover->duplicate();
-			panel_button_style_hover->set_bg_color(p_config.base_color.lerp(p_config.mono_color, 0.16));
-
-			Ref<StyleBoxFlat> panel_button_style_pressed = p_config.button_style_pressed->duplicate();
-			panel_button_style_pressed->set_bg_color(p_config.base_color.lerp(p_config.mono_color, 0.20));
-
-			Ref<StyleBoxFlat> panel_button_style_disabled = p_config.button_style_disabled->duplicate();
-			panel_button_style_disabled->set_bg_color(p_config.disabled_bg_color);
-
-			p_theme->set_stylebox(CoreStringName(normal), "PanelBackgroundButton", panel_button_style);
-			p_theme->set_stylebox(SceneStringName(hover), "PanelBackgroundButton", panel_button_style_hover);
-			p_theme->set_stylebox(SceneStringName(pressed), "PanelBackgroundButton", panel_button_style_pressed);
-			p_theme->set_stylebox("disabled", "PanelBackgroundButton", panel_button_style_disabled);
 		}
 
 		// Top bar selectors.
@@ -1988,32 +1959,6 @@ void ThemeModern::populate_editor_styles(const Ref<EditorTheme> &p_theme, Editor
 			// Same as above, including the bottom.
 			p_theme->set_type_variation("NoBorderHorizontalBottomWide", "NoBorderHorizontalWide");
 			p_theme->set_constant("margin_bottom", "NoBorderHorizontalBottomWide", margin);
-
-			// Used in the asset library. Specifically, the ("bg", "AssetLib") stylebox.
-
-			margin = -p_config.base_margin * EDSCALE;
-
-			p_theme->set_type_variation("NoBorderAssetLib", "MarginContainer");
-			p_theme->set_constant("margin_left", "NoBorderAssetLib", margin);
-			p_theme->set_constant("margin_right", "NoBorderAssetLib", margin);
-			p_theme->set_constant("margin_bottom", "NoBorderAssetLib", margin);
-
-			p_theme->set_type_variation("NoBorderAssetLibHorizontal", "MarginContainer");
-			p_theme->set_constant("margin_left", "NoBorderAssetLibHorizontal", margin);
-			p_theme->set_constant("margin_right", "NoBorderAssetLibHorizontal", margin);
-
-			margin -= panel_margin;
-
-			// Same as above, but with the margins adapted for the project manager.
-
-			p_theme->set_type_variation("NoBorderAssetLibProjectManager", "MarginContainer");
-			p_theme->set_constant("margin_left", "NoBorderAssetLibProjectManager", margin);
-			p_theme->set_constant("margin_right", "NoBorderAssetLibProjectManager", margin);
-			p_theme->set_constant("margin_bottom", "NoBorderAssetLibProjectManager", margin);
-
-			p_theme->set_type_variation("NoBorderAssetLibProjectManagerHorizontal", "MarginContainer");
-			p_theme->set_constant("margin_left", "NoBorderAssetLibProjectManagerHorizontal", margin);
-			p_theme->set_constant("margin_right", "NoBorderAssetLibProjectManagerHorizontal", margin);
 
 			int bottom_margin = p_theme->get_stylebox(SNAME("BottomPanel"), EditorStringName(EditorStyles))->get_content_margin(SIDE_LEFT);
 			margin = -bottom_margin;
@@ -2699,20 +2644,6 @@ void ThemeModern::populate_editor_styles(const Ref<EditorTheme> &p_theme, Editor
 
 		p_theme->set_type_variation("EditorHelpBitTooltipContent", "EditorHelpBitContent");
 		p_theme->set_stylebox(CoreStringName(normal), "EditorHelpBitTooltipContent", style);
-	}
-
-	// Asset Store.
-	{
-		Ref<StyleBoxFlat> assetlib_panel_style = p_config.base_style->duplicate();
-		assetlib_panel_style->set_bg_color(p_config.surface_low_color);
-		assetlib_panel_style->set_content_margin_all(p_config.base_margin * 2 * EDSCALE);
-
-		p_theme->set_stylebox("bg", "AssetLib", EditorThemeManager::make_empty_stylebox(p_config.base_margin, p_config.base_margin, p_config.base_margin, p_config.base_margin));
-		p_theme->set_stylebox(SceneStringName(panel), "AssetLib", assetlib_panel_style);
-		p_theme->set_stylebox(SceneStringName(panel), "AssetLib", p_config.foreground_panel);
-		p_theme->set_stylebox("downloads", "AssetLib", p_theme->get_stylebox(SceneStringName(panel), SNAME("ScrollContainerSecondary")));
-		p_theme->set_color("faded_text", "AssetLib", p_config.font_disabled_color);
-		p_theme->set_icon("dismiss", "AssetLib", p_theme->get_icon(SNAME("Close"), EditorStringName(EditorIcons)));
 	}
 
 	// Debugger.
