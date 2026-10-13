@@ -322,19 +322,14 @@ void SceneRPCInterface::_send_rpc(Node *p_node, int p_to, uint16_t p_rpc_id, con
 	HashSet<int> targets;
 	int psc_id = -1;
 	bool has_all_peers = true;
-	const ObjectID oid = p_node->get_instance_id();
+	// Crete: node replication removed, so there is no per-peer visibility; RPCs go to all targets.
 	if (p_to > 0) {
-		ERR_FAIL_COND_MSG(!multiplayer_replicator->is_rpc_visible(oid, p_to), "Attempt to call an RPC to a peer that cannot see this node. Peer ID: " + itos(p_to));
 		targets.insert(p_to);
 		has_all_peers = multiplayer_cache->send_object_cache(p_node, p_to, psc_id);
 	} else {
-		bool restricted = !multiplayer_replicator->is_rpc_visible(oid, 0);
 		for (const int &P : multiplayer->get_connected_peers()) {
 			if (p_to < 0 && P == -p_to) {
 				continue; // Excluded peer.
-			}
-			if (restricted && !multiplayer_replicator->is_rpc_visible(oid, P)) {
-				continue; // Not visible to this peer.
 			}
 			targets.insert(P);
 			bool has_peer = multiplayer_cache->send_object_cache(p_node, P, psc_id);

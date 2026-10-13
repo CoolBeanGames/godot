@@ -31,7 +31,6 @@
 #pragma once
 
 #include "scene_cache_interface.h"
-#include "scene_replication_interface.h"
 #include "scene_rpc_interface.h"
 
 #include "scene/main/multiplayer_api.h"
@@ -70,7 +69,7 @@ public:
 		NETWORK_COMMAND_SIMPLIFY_PATH,
 		NETWORK_COMMAND_CONFIRM_PATH,
 		NETWORK_COMMAND_RAW,
-		NETWORK_COMMAND_SPAWN,
+		NETWORK_COMMAND_SPAWN, // Crete: replication removed; values kept for wire numbering, never emitted.
 		NETWORK_COMMAND_DESPAWN,
 		NETWORK_COMMAND_SYNC,
 		NETWORK_COMMAND_SYS,
@@ -124,7 +123,6 @@ private:
 	Ref<StreamPeerBuffer> relay_buffer;
 
 	Ref<SceneCacheInterface> cache;
-	Ref<SceneReplicationInterface> replicator;
 	Ref<SceneRPCInterface> rpc;
 
 #ifdef DEBUG_ENABLED
@@ -193,12 +191,6 @@ public:
 
 	void set_server_relay_enabled(bool p_enabled);
 	bool is_server_relay_enabled() const;
-
-	void set_max_sync_packet_size(int p_size);
-	int get_max_sync_packet_size() const;
-
-	void set_max_delta_packet_size(int p_size);
-	int get_max_delta_packet_size() const;
 
 	SceneMultiplayer();
 	~SceneMultiplayer();

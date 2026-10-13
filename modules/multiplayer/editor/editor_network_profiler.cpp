@@ -30,7 +30,6 @@
 
 #include "editor_network_profiler.h"
 
-#include "core/io/resource_loader.h"
 #include "core/object/callable_mp.h"
 #include "editor/editor_string_names.h"
 #include "editor/run/editor_run_bar.h"
@@ -39,7 +38,6 @@
 #include "scene/gui/check_box.h"
 #include "scene/gui/flow_container.h"
 #include "scene/gui/line_edit.h"
-#include "scene/gui/split_container.h"
 #include "scene/main/timer.h"
 
 void EditorNetworkProfiler::_bind_methods() {
@@ -88,9 +86,6 @@ void EditorNetworkProfiler::_update_theme_item_cache() {
 	theme_cache.play_icon = get_theme_icon(SNAME("Play"), EditorStringName(EditorIcons));
 	theme_cache.clear_icon = get_theme_icon(SNAME("Clear"), EditorStringName(EditorIcons));
 
-	theme_cache.multiplayer_synchronizer_icon = get_theme_icon("MultiplayerSynchronizer", EditorStringName(EditorIcons));
-	theme_cache.instance_options_icon = get_theme_icon(SNAME("InstanceOptions"), EditorStringName(EditorIcons));
-
 	theme_cache.incoming_bandwidth_icon = get_theme_icon(SNAME("ArrowDown"), EditorStringName(EditorIcons));
 	theme_cache.outgoing_bandwidth_icon = get_theme_icon(SNAME("ArrowUp"), EditorStringName(EditorIcons));
 
@@ -104,7 +99,6 @@ void EditorNetworkProfiler::_refresh() {
 	}
 	dirty = false;
 	refresh_rpc_data();
-	refresh_replication_data();
 }
 
 void EditorNetworkProfiler::refresh_rpc_data() {
@@ -124,69 +118,6 @@ void EditorNetworkProfiler::refresh_rpc_data() {
 		node->set_text(1, E.value.incoming_rpc == 0 ? "-" : vformat(TTR("%d (%s)"), E.value.incoming_rpc, String::humanize_size(E.value.incoming_size)));
 		node->set_text(2, E.value.outgoing_rpc == 0 ? "-" : vformat(TTR("%d (%s)"), E.value.outgoing_rpc, String::humanize_size(E.value.outgoing_size)));
 	}
-}
-
-void EditorNetworkProfiler::refresh_replication_data() {
-	replication_display->clear();
-
-	TreeItem *root = replication_display->create_item();
-
-	for (const KeyValue<ObjectID, SyncInfo> &E : sync_data) {
-		// Ensure the nodes have at least a temporary cache.
-		ObjectID ids[3] = { E.value.synchronizer, E.value.config, E.value.root_node };
-		for (uint32_t i = 0; i < 3; i++) {
-			const ObjectID &id = ids[i];
-			if (!node_data.has(id)) {
-				missing_node_data.insert(id);
-				node_data[id] = NodeInfo(id);
-			}
-		}
-
-		TreeItem *node = replication_display->create_item(root);
-
-		const NodeInfo &root_info = node_data[E.value.root_node];
-		const NodeInfo &sync_info = node_data[E.value.synchronizer];
-		const NodeInfo &cfg_info = node_data[E.value.config];
-
-		node->set_text(0, root_info.path.get_file());
-		node->set_icon(0, has_theme_icon(root_info.type, EditorStringName(EditorIcons)) ? get_theme_icon(root_info.type, EditorStringName(EditorIcons)) : theme_cache.node_icon);
-		node->set_tooltip_text(0, root_info.path);
-
-		node->set_text(1, sync_info.path.get_file());
-		node->set_icon(1, theme_cache.multiplayer_synchronizer_icon);
-		node->set_tooltip_text(1, sync_info.path);
-
-		int cfg_idx = cfg_info.path.find("::");
-		if (cfg_info.path.begins_with("res://") && ResourceLoader::exists(cfg_info.path) && cfg_idx > 0) {
-			String res_idstr = cfg_info.path.substr(cfg_idx + 2).replace("SceneReplicationConfig_", "");
-			String scene_path = cfg_info.path.substr(0, cfg_idx);
-			node->set_text(2, vformat("%s (%s)", res_idstr, scene_path.get_file()));
-			node->add_button(2, theme_cache.instance_options_icon);
-			node->set_tooltip_text(2, cfg_info.path);
-			node->set_metadata(2, scene_path);
-		} else {
-			node->set_text(2, cfg_info.path);
-			node->set_metadata(2, "");
-		}
-
-		node->set_text(3, vformat("%d - %d", E.value.incoming_syncs, E.value.outgoing_syncs));
-		node->set_text(4, vformat("%d - %d", E.value.incoming_size, E.value.outgoing_size));
-	}
-}
-
-Array EditorNetworkProfiler::pop_missing_node_data() {
-	Array out;
-	for (const ObjectID &id : missing_node_data) {
-		out.push_back(id);
-	}
-	missing_node_data.clear();
-	return out;
-}
-
-void EditorNetworkProfiler::add_node_data(const NodeInfo &p_info) {
-	ERR_FAIL_COND(!node_data.has(p_info.id));
-	node_data[p_info.id] = p_info;
-	dirty = true;
 }
 
 void EditorNetworkProfiler::_activate_pressed() {
@@ -235,28 +166,14 @@ void EditorNetworkProfiler::set_profiling(bool p_pressed) {
 
 void EditorNetworkProfiler::_clear_pressed() {
 	rpc_data.clear();
-	sync_data.clear();
-	node_data.clear();
-	missing_node_data.clear();
 	set_bandwidth(0, 0);
 	refresh_rpc_data();
-	refresh_replication_data();
 	clear_button->set_disabled(true);
 }
 
 void EditorNetworkProfiler::_autostart_toggled(bool p_toggled_on) {
 	EditorSettings::get_singleton()->set_project_metadata("debug_options", "autostart_network_profiler", p_toggled_on);
 	EditorRunBar::get_singleton()->update_profiler_autostart_indicator();
-}
-
-void EditorNetworkProfiler::_replication_button_clicked(TreeItem *p_item, int p_column, int p_idx, MouseButton p_button) {
-	if (!p_item) {
-		return;
-	}
-	String meta = p_item->get_metadata(p_column);
-	if (meta.size() && ResourceLoader::exists(meta)) {
-		emit_signal("open_request", meta);
-	}
 }
 
 void EditorNetworkProfiler::add_rpc_frame_data(const RPCNodeInfo &p_frame) {
@@ -275,26 +192,6 @@ void EditorNetworkProfiler::add_rpc_frame_data(const RPCNodeInfo &p_frame) {
 	}
 	if (p_frame.outgoing_rpc) {
 		rpc_data[p_frame.node].outgoing_size = p_frame.outgoing_size / p_frame.outgoing_rpc;
-	}
-}
-
-void EditorNetworkProfiler::add_sync_frame_data(const SyncInfo &p_frame) {
-	if (clear_button->is_disabled()) {
-		clear_button->set_disabled(false);
-	}
-	dirty = true;
-	if (!sync_data.has(p_frame.synchronizer)) {
-		sync_data[p_frame.synchronizer] = p_frame;
-	} else {
-		sync_data[p_frame.synchronizer].incoming_syncs += p_frame.incoming_syncs;
-		sync_data[p_frame.synchronizer].outgoing_syncs += p_frame.outgoing_syncs;
-	}
-	SyncInfo &info = sync_data[p_frame.synchronizer];
-	if (p_frame.incoming_syncs) {
-		info.incoming_size = p_frame.incoming_size / p_frame.incoming_syncs;
-	}
-	if (p_frame.outgoing_syncs) {
-		info.outgoing_size = p_frame.outgoing_size / p_frame.outgoing_syncs;
 	}
 }
 
@@ -379,14 +276,9 @@ EditorNetworkProfiler::EditorNetworkProfiler() {
 	outgoing_bandwidth_text->set_accessibility_name(TTRC("Outgoing Bandwidth"));
 	hb->add_child(outgoing_bandwidth_text);
 
-	HSplitContainer *sc = memnew(HSplitContainer);
-	add_child(sc);
-	sc->set_v_size_flags(SIZE_EXPAND_FILL);
-	sc->set_h_size_flags(SIZE_EXPAND_FILL);
-	sc->set_split_offset(100 * EDSCALE);
-
 	// RPC
 	counters_display = memnew(Tree);
+	add_child(counters_display);
 	counters_display->set_custom_minimum_size(Size2(280, 0) * EDSCALE);
 	counters_display->set_v_size_flags(SIZE_EXPAND_FILL);
 	counters_display->set_h_size_flags(SIZE_EXPAND_FILL);
@@ -407,40 +299,6 @@ EditorNetworkProfiler::EditorNetworkProfiler() {
 	counters_display->set_column_clip_content(2, true);
 	counters_display->set_theme_type_variation("TreeSecondary");
 	counters_display->set_column_custom_minimum_width(2, 120 * EDSCALE);
-	sc->add_child(counters_display);
-
-	// Replication
-	replication_display = memnew(Tree);
-	replication_display->set_custom_minimum_size(Size2(280, 0) * EDSCALE);
-	replication_display->set_v_size_flags(SIZE_EXPAND_FILL);
-	replication_display->set_h_size_flags(SIZE_EXPAND_FILL);
-	replication_display->set_hide_folding(true);
-	replication_display->set_hide_root(true);
-	replication_display->set_columns(5);
-	replication_display->set_column_titles_visible(true);
-	replication_display->set_column_title(0, TTRC("Root"));
-	replication_display->set_column_expand(0, true);
-	replication_display->set_column_clip_content(0, true);
-	replication_display->set_column_custom_minimum_width(0, 80 * EDSCALE);
-	replication_display->set_column_title(1, TTRC("Synchronizer"));
-	replication_display->set_column_expand(1, true);
-	replication_display->set_column_clip_content(1, true);
-	replication_display->set_column_custom_minimum_width(1, 80 * EDSCALE);
-	replication_display->set_column_title(2, TTRC("Config"));
-	replication_display->set_column_expand(2, true);
-	replication_display->set_column_clip_content(2, true);
-	replication_display->set_column_custom_minimum_width(2, 80 * EDSCALE);
-	replication_display->set_column_title(3, TTRC("Count"));
-	replication_display->set_column_expand(3, false);
-	replication_display->set_column_clip_content(3, true);
-	replication_display->set_column_custom_minimum_width(3, 80 * EDSCALE);
-	replication_display->set_column_title(4, TTRC("Size"));
-	replication_display->set_column_expand(4, false);
-	replication_display->set_column_clip_content(4, true);
-	replication_display->set_column_custom_minimum_width(4, 80 * EDSCALE);
-	replication_display->set_theme_type_variation("TreeSecondary");
-	replication_display->connect("button_clicked", callable_mp(this, &EditorNetworkProfiler::_replication_button_clicked));
-	sc->add_child(replication_display);
 
 	refresh_timer = memnew(Timer);
 	refresh_timer->set_wait_time(0.5);

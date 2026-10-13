@@ -52,27 +52,20 @@ public:
 	virtual void setup_session(int p_session_id) override;
 };
 
-class ReplicationEditor;
-
+// Crete: node replication removed; the plugin only hosts the network profiler debugger.
 class MultiplayerEditorPlugin : public EditorPlugin {
 	GDCLASS(MultiplayerEditorPlugin, EditorPlugin);
 
 private:
-	ReplicationEditor *repl_editor = nullptr;
 	Ref<MultiplayerEditorDebugger> debugger;
 
 	void _open_request(const String &p_path);
-	void _node_removed(Node *p_node);
-
-	void _pinned();
 
 protected:
 	void _notification(int p_what);
 
 public:
-	virtual void edit(Object *p_object) override;
 	virtual bool handles(Object *p_object) const override;
-	virtual void make_visible(bool p_visible) override;
 
 	MultiplayerEditorPlugin();
 };

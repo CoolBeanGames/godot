@@ -57,8 +57,6 @@ TEST_CASE("[Multiplayer][SceneMultiplayer] Defaults") {
 	CHECK_FALSE(scene_multiplayer->is_refusing_new_connections());
 	CHECK_FALSE(scene_multiplayer->is_object_decoding_allowed());
 	CHECK(scene_multiplayer->is_server_relay_enabled());
-	CHECK_EQ(scene_multiplayer->get_max_sync_packet_size(), 1350);
-	CHECK_EQ(scene_multiplayer->get_max_delta_packet_size(), 65535);
 	CHECK(scene_multiplayer->is_server());
 }
 
@@ -101,25 +99,15 @@ TEST_CASE("[Multiplayer][SceneMultiplayer][SceneTree] Object configuration add/r
 		CHECK_EQ(scene_multiplayer->get_root_path(), NodePath());
 	}
 
-	SUBCASE("Add/Remove a MultiplayerSpawner") {
+	SUBCASE("Rejects object configurations") {
+		// Crete: node replication removed; only NodePath root-path configs are accepted.
 		Node2D *node = memnew(Node2D);
-		MultiplayerSpawner *spawner = memnew(MultiplayerSpawner);
+		Node2D *config = memnew(Node2D);
 
-		CHECK_EQ(scene_multiplayer->object_configuration_add(node, spawner), Error::OK);
-		CHECK_EQ(scene_multiplayer->object_configuration_remove(node, spawner), Error::OK);
+		CHECK_EQ(scene_multiplayer->object_configuration_add(node, config), Error::ERR_INVALID_PARAMETER);
+		CHECK_EQ(scene_multiplayer->object_configuration_remove(node, config), Error::ERR_INVALID_PARAMETER);
 
-		memdelete(spawner);
-		memdelete(node);
-	}
-
-	SUBCASE("Add/Remove a MultiplayerSynchronizer") {
-		Node2D *node = memnew(Node2D);
-		MultiplayerSynchronizer *synchronizer = memnew(MultiplayerSynchronizer);
-
-		CHECK_EQ(scene_multiplayer->object_configuration_add(node, synchronizer), Error::OK);
-		CHECK_EQ(scene_multiplayer->object_configuration_remove(node, synchronizer), Error::OK);
-
-		memdelete(synchronizer);
+		memdelete(config);
 		memdelete(node);
 	}
 }

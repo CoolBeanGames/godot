@@ -58,3 +58,24 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   (6 fewer cases than Step 1: the GDScript module's own tests are gone.)
   Extension-API dump contains 0 GDScript references; no-project runs exit 1
   with the Crete Hub message.
+
+## Step 3: OpenXR removed, node replication removed (DONE)
+
+- Build flags add: `module_openxr_enabled=no`.
+- `modules/openxr/` deleted; `xr/openxr/*` project settings in `main.cpp`
+  guarded by `#ifdef MODULE_OPENXR_ENABLED`. XR core (`XRServer`), the
+  `mobile_vr`/`webxr` modules, and `thirdparty/openxr` (Android-only refs)
+  stay. `BUILD_OPTION_OPENXR` stays as a build-profile passthrough.
+- Multiplayer: narrow cut, NOT `module_multiplayer_enabled=no` (the base
+  `MultiplayerAPI` is abstract; the full cut would kill RPC lobbies too).
+  Deleted: spawner, synchronizer, replication interface + config, replication
+  editor + docs + icons + spawner tests. `SceneMultiplayer` keeps RPCs, auth,
+  peers, bandwidth/RPC profiling; per-peer RPC visibility is gone (no
+  replication to drive it). Wire command numbers unchanged.
+- Tests: `test_crete_removals.cpp` gains OpenXR-absent, replication-absent,
+  and RPC-present cases; `test_scene_multiplayer.h` drops the removed API.
+- Results: build DONE with 0 errors; focused suites 6/6 (Crete) and 7/7
+  (multiplayer incl. auth flow) passed; full suite **1371 passed, 0 failed,
+  3 skipped; 356,579 assertions. Status: SUCCESS.**
+  Extension-API dump: 0 OpenXR refs, 0 replication refs, SceneMultiplayer
+  still present.

@@ -32,7 +32,9 @@
 
 TEST_FORCE_LINK(test_crete_removals)
 
+#include "core/config/project_settings.h"
 #include "core/object/class_db.h"
+#include "core/object/method_bind.h"
 #include "core/object/script_language.h"
 
 namespace TestCreteRemovals {
@@ -59,6 +61,35 @@ TEST_SUITE("Crete removals") {
 			}
 		}
 		CHECK_MESSAGE(found, "C# must be the scripting language.");
+	}
+
+	TEST_CASE("OpenXR classes are absent") {
+		CHECK_FALSE(ClassDB::class_exists("OpenXRInterface"));
+		CHECK_FALSE(ClassDB::class_exists("OpenXRAction"));
+		CHECK_FALSE(ClassDB::class_exists("OpenXRActionMap"));
+		CHECK_FALSE(ProjectSettings::get_singleton()->has_setting("xr/openxr/enabled"));
+	}
+
+	TEST_CASE("Node replication classes are absent") {
+		CHECK_FALSE(ClassDB::class_exists("MultiplayerSpawner"));
+		CHECK_FALSE(ClassDB::class_exists("MultiplayerSynchronizer"));
+		CHECK_FALSE(ClassDB::class_exists("SceneReplicationConfig"));
+	}
+
+	TEST_CASE("RPC multiplayer classes are present") {
+		CHECK(ClassDB::class_exists("MultiplayerAPI"));
+		CHECK(ClassDB::class_exists("SceneMultiplayer"));
+		CHECK(ClassDB::class_exists("OfflineMultiplayerPeer"));
+		CHECK(ClassDB::class_exists("ENetMultiplayerPeer"));
+		List<MethodInfo> methods;
+		ClassDB::get_method_list("SceneMultiplayer", &methods);
+		bool has_replication_api = false;
+		for (const MethodInfo &m : methods) {
+			if (m.name == "set_max_sync_packet_size" || m.name == "set_max_delta_packet_size") {
+				has_replication_api = true;
+			}
+		}
+		CHECK_FALSE(has_replication_api);
 	}
 }
 

@@ -162,7 +162,6 @@ Error SceneMultiplayer::poll() {
 		return OK;
 	}
 
-	replicator->on_network_process();
 	return OK;
 }
 
@@ -171,7 +170,6 @@ void SceneMultiplayer::clear() {
 	pending_peers.clear();
 	connected_peers.clear();
 	packet_cache.clear();
-	replicator->on_reset();
 	cache->clear();
 	relay_buffer->clear();
 }
@@ -235,15 +233,7 @@ void SceneMultiplayer::_process_packet(int p_from, const uint8_t *p_packet, int 
 		case NETWORK_COMMAND_RAW: {
 			_process_raw(p_from, p_packet, p_packet_len);
 		} break;
-		case NETWORK_COMMAND_SPAWN: {
-			replicator->on_spawn_receive(p_from, p_packet, p_packet_len);
-		} break;
-		case NETWORK_COMMAND_DESPAWN: {
-			replicator->on_despawn_receive(p_from, p_packet, p_packet_len);
-		} break;
-		case NETWORK_COMMAND_SYNC: {
-			replicator->on_sync_receive(p_from, p_packet, p_packet_len);
-		} break;
+		// Crete: NETWORK_COMMAND_SPAWN/DESPAWN/SYNC intentionally unhandled (replication removed).
 		default: {
 			ERR_FAIL_MSG("Invalid network command from " + itos(p_from));
 		} break;
@@ -387,7 +377,6 @@ void SceneMultiplayer::_admit_peer(int p_id) {
 
 	connected_peers.insert(p_id);
 	cache->on_peer_change(p_id, true);
-	replicator->on_peer_change(p_id, true);
 	if (p_id == 1) {
 		emit_signal(SNAME("connected_to_server"));
 	}
@@ -420,7 +409,6 @@ void SceneMultiplayer::_del_peer(int p_id) {
 		}
 	}
 
-	replicator->on_peer_change(p_id, false);
 	cache->on_peer_change(p_id, false);
 	connected_peers.erase(p_id);
 	emit_signal(SNAME("peer_disconnected"), p_id);
@@ -579,17 +567,12 @@ Error SceneMultiplayer::rpcp(Object *p_obj, int p_peer_id, const StringName &p_m
 	return rpc->rpcp(p_obj, p_peer_id, p_method, p_arg, p_argcount);
 }
 
+// Crete: node replication removed (no spawner/synchronizer); only the root-path
+// configuration used by SceneTree itself is supported.
 Error SceneMultiplayer::object_configuration_add(Object *p_obj, Variant p_config) {
 	if (p_obj == nullptr && p_config.get_type() == Variant::NODE_PATH) {
 		set_root_path(p_config);
 		return OK;
-	}
-	MultiplayerSpawner *spawner = Object::cast_to<MultiplayerSpawner>(p_config.get_validated_object());
-	MultiplayerSynchronizer *sync = Object::cast_to<MultiplayerSynchronizer>(p_config.get_validated_object());
-	if (spawner) {
-		return replicator->on_spawn(p_obj, p_config);
-	} else if (sync) {
-		return replicator->on_replication_start(p_obj, p_config);
 	}
 	return ERR_INVALID_PARAMETER;
 }
@@ -600,14 +583,6 @@ Error SceneMultiplayer::object_configuration_remove(Object *p_obj, Variant p_con
 		set_root_path(NodePath());
 		return OK;
 	}
-	MultiplayerSpawner *spawner = Object::cast_to<MultiplayerSpawner>(p_config.get_validated_object());
-	MultiplayerSynchronizer *sync = Object::cast_to<MultiplayerSynchronizer>(p_config.get_validated_object());
-	if (spawner) {
-		return replicator->on_despawn(p_obj, p_config);
-	}
-	if (sync) {
-		return replicator->on_replication_stop(p_obj, p_config);
-	}
 	return ERR_INVALID_PARAMETER;
 }
 
@@ -617,22 +592,6 @@ void SceneMultiplayer::set_server_relay_enabled(bool p_enabled) {
 
 bool SceneMultiplayer::is_server_relay_enabled() const {
 	return server_relay;
-}
-
-void SceneMultiplayer::set_max_sync_packet_size(int p_size) {
-	replicator->set_max_sync_packet_size(p_size);
-}
-
-int SceneMultiplayer::get_max_sync_packet_size() const {
-	return replicator->get_max_sync_packet_size();
-}
-
-void SceneMultiplayer::set_max_delta_packet_size(int p_size) {
-	replicator->set_max_delta_packet_size(p_size);
-}
-
-int SceneMultiplayer::get_max_delta_packet_size() const {
-	return replicator->get_max_delta_packet_size();
 }
 
 void SceneMultiplayer::_bind_methods() {
@@ -659,19 +618,12 @@ void SceneMultiplayer::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("is_server_relay_enabled"), &SceneMultiplayer::is_server_relay_enabled);
 	ClassDB::bind_method(D_METHOD("send_bytes", "bytes", "id", "mode", "channel"), &SceneMultiplayer::send_bytes, DEFVAL(MultiplayerPeer::TARGET_PEER_BROADCAST), DEFVAL(MultiplayerPeer::TRANSFER_MODE_RELIABLE), DEFVAL(0));
 
-	ClassDB::bind_method(D_METHOD("get_max_sync_packet_size"), &SceneMultiplayer::get_max_sync_packet_size);
-	ClassDB::bind_method(D_METHOD("set_max_sync_packet_size", "size"), &SceneMultiplayer::set_max_sync_packet_size);
-	ClassDB::bind_method(D_METHOD("get_max_delta_packet_size"), &SceneMultiplayer::get_max_delta_packet_size);
-	ClassDB::bind_method(D_METHOD("set_max_delta_packet_size", "size"), &SceneMultiplayer::set_max_delta_packet_size);
-
 	ADD_PROPERTY(PropertyInfo(Variant::NODE_PATH, "root_path"), "set_root_path", "get_root_path");
 	ADD_PROPERTY(PropertyInfo(Variant::CALLABLE, "auth_callback"), "set_auth_callback", "get_auth_callback");
 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "auth_timeout", PROPERTY_HINT_RANGE, "0,30,0.1,or_greater,suffix:s"), "set_auth_timeout", "get_auth_timeout");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "allow_object_decoding"), "set_allow_object_decoding", "is_object_decoding_allowed");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "refuse_new_connections"), "set_refuse_new_connections", "is_refusing_new_connections");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "server_relay"), "set_server_relay_enabled", "is_server_relay_enabled");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_sync_packet_size"), "set_max_sync_packet_size", "get_max_sync_packet_size");
-	ADD_PROPERTY(PropertyInfo(Variant::INT, "max_delta_packet_size"), "set_max_delta_packet_size", "get_max_delta_packet_size");
 
 	ADD_PROPERTY_DEFAULT("refuse_new_connections", false);
 
@@ -683,8 +635,7 @@ void SceneMultiplayer::_bind_methods() {
 SceneMultiplayer::SceneMultiplayer() {
 	relay_buffer.instantiate();
 	cache.instantiate(this);
-	replicator.instantiate(this, cache.ptr());
-	rpc.instantiate(this, cache.ptr(), replicator.ptr());
+	rpc.instantiate(this, cache.ptr());
 	set_multiplayer_peer(Ref<OfflineMultiplayerPeer>(memnew(OfflineMultiplayerPeer)));
 }
 
@@ -692,6 +643,5 @@ SceneMultiplayer::~SceneMultiplayer() {
 	clear();
 	// Ensure unref in reverse order for safety (we shouldn't use those pointers in the deconstructors anyway).
 	rpc.unref();
-	replicator.unref();
 	cache.unref();
 }

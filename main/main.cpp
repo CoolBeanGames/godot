@@ -2831,6 +2831,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	GLOBAL_DEF("display/window/ios/suppress_ui_gesture", true);
 
 #ifndef _3D_DISABLED
+#ifdef MODULE_OPENXR_ENABLED // Crete: OpenXR module removed; these settings exist only when it is enabled.
 	// XR project settings.
 	GLOBAL_DEF_RST_BASIC("xr/openxr/enabled", false);
 	GLOBAL_DEF(PropertyInfo(Variant::STRING, "xr/openxr/target_api_version"), "");
@@ -2872,6 +2873,7 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	// OpenXR Binding modifier settings
 	GLOBAL_DEF_BASIC("xr/openxr/binding_modifiers/analog_threshold", false);
 	GLOBAL_DEF_RST_BASIC("xr/openxr/binding_modifiers/dpad_binding", false);
+#endif // MODULE_OPENXR_ENABLED
 
 #ifdef TOOLS_ENABLED
 	// Disabled for now, using XR inside of the editor we'll be working on during the coming months.
