@@ -176,6 +176,10 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
+# Crete: our Publish dock sources live in GodotTools/GodotTools/Publish —
+# keep tracking them (dotnet publish output never lands there).
+!GodotTools/Publish/
+!GodotTools/Publish/*.cs
 
 # Publish Web Output
 *.[Pp]ublish.xml

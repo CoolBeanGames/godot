@@ -400,5 +400,13 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   command resolving the preset to the templates-missing terminal
   state (templates are user-installed; the dock warns).
 - C# note: qualify `System.Environment` (Godot.Environment collides).
+- Repo lesson: GodotTools' `.gitignore` has a blanket `publish/`
+  (ClickOnce output) rule that silently swallowed the new
+  `GodotTools/Publish/*.cs` sources — the first Step 13 commit went
+  out without them (broken fresh-clone build). Fixed with a
+  same-file `!GodotTools/Publish/` + `!GodotTools/Publish/*.cs`
+  negation in a followup commit; always check `git status` shows new
+  dirs before committing (negation paths are relative to the
+  `.gitignore`, not the repo root).
 - Results: build DONE; full suite **1387 passed, 0 failed, 3
   skipped; 356,627 assertions. Status: SUCCESS.**
