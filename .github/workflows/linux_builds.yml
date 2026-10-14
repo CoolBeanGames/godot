@@ -192,7 +192,7 @@ jobs:
 
           [connection signal="pressed" from="HUD/PlayButton" to="." method="_on_play_button_pressed"]
           EOF
-          ./bin/godot.linuxbsd.editor.x86_64.mono --headless --path /tmp/crete-e2e --quit-after 30 -- --crete-e2e-docks > /tmp/crete-e2e.log 2>&1
+          ./bin/godot.linuxbsd.editor.x86_64.mono --headless -e --path /tmp/crete-e2e --quit-after 30 -- --crete-e2e-docks > /tmp/crete-e2e.log 2>&1
           grep -q "e2e DONE" /tmp/crete-e2e.log
           grep -q "dock_9=\[FileSystem,Output,GitHub,Agents,Debugger,Animation,Shader Editor,Audio,MSBuild,Publish\]" /tmp/crete-e2e.log
           grep -q "signals2=\[Signals (1)\]" /tmp/crete-e2e.log
@@ -202,6 +202,12 @@ jobs:
           grep -q "thumbs=on" /tmp/crete-e2e.log
           grep -q "hscroll=off" /tmp/crete-e2e.log
           grep -q "import=landed" /tmp/crete-e2e.log
+
+      - name: Show E2E log on failure
+        if: failure()
+        shell: bash
+        run: |
+          grep "CreteDocks:" /tmp/crete-e2e.log || tail -50 /tmp/crete-e2e.log
 
   build-linux-templates:
     if: inputs.templates
