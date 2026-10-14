@@ -1615,6 +1615,16 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 			auto_build_solutions = true;
 			editor = true;
 			cmdline_tool = true;
+		} else if (arg == "--generate-mono-glue") { // Crete: generate C# bindings without a project (Step 8).
+			editor = true;
+			cmdline_tool = true;
+			// Forwarded to main_args: the bindings generator reads its flag and dir back
+			// from OS::get_cmdline_args() in start(). A missing dir is reported there.
+			main_args.push_back(arg);
+			if (N) {
+				main_args.push_back(N->get());
+				N = N->next();
+			}
 		} else if (arg == "--dump-gdextension-interface") {
 			// Register as an editor instance to use low-end fallback if relevant.
 			editor = true;
@@ -3787,6 +3797,11 @@ Error Main::setup2(bool p_show_boot_logo) {
 	// after init'ing the ScriptServer, but also after init'ing the ThemeDB,
 	// for the C# docs generation in the bindings.
 	List<String> cmdline_args = OS::get_singleton()->get_cmdline_args();
+	// Crete: the Project Manager is gone, so nothing implies editor context for glue
+	// generation anymore; mark it explicitly or the generator refuses to run (Step 8).
+	if (cmdline_args.find("--generate-mono-glue")) {
+		Engine::get_singleton()->set_editor_hint(true);
+	}
 	BindingsGenerator::handle_cmdline_args(cmdline_args);
 #endif
 

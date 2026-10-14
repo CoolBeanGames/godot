@@ -199,6 +199,7 @@ private:
 	_FORCE_INLINE_ void _update_group_order(SceneTreeGroup &g);
 
 	TypedArray<Node> _get_nodes_in_group(const StringName &p_group);
+	TypedArray<Node> _get_nodes_with_tag(const StringName &p_tag);
 
 	Node *current_scene = nullptr;
 	ObjectID prev_scene_id;
@@ -412,6 +413,7 @@ public:
 	void queue_delete(RequiredParam<Object> rp_object);
 
 	Vector<Node *> get_nodes_in_group(const StringName &p_group);
+	Vector<Node *> get_nodes_with_tag(const StringName &p_tag);
 	Node *get_first_node_in_group(const StringName &p_group);
 	bool has_group(const StringName &p_identifier) const;
 	int get_node_count_in_group(const StringName &p_group) const;

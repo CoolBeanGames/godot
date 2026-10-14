@@ -36,6 +36,7 @@
 #include "core/object/ref_counted.h"
 #include "core/os/thread_safe.h"
 #include "core/templates/iterable.h"
+#include "core/variant/variant.h"
 #include "scene/scene_string_names.h" // IWYU pragma: export. Make available to all Nodes.
 
 class MultiplayerAPI;
@@ -581,6 +582,11 @@ public:
 
 	void get_groups(List<GroupInfo> *p_groups) const;
 	int get_persistent_group_count() const;
+
+	void add_tag(const StringName &p_tag);
+	void remove_tag(const StringName &p_tag);
+	bool has_tag(const StringName &p_tag) const;
+	PackedStringArray get_tags() const;
 
 	void move_child(RequiredParam<Node> rp_child, int p_index);
 	void _move_child(Node *p_child, int p_index, bool p_ignore_end = false);

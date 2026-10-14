@@ -190,13 +190,21 @@
 				[b]Note:[/b] If this node is internal, the added sibling will be internal too (see [method add_child]'s [code]internal[/code] parameter).
 			</description>
 		</method>
+		<method name="add_tag">
+			<return type="void" />
+			<param index="0" name="tag" type="StringName" />
+			<description>
+				Adds the given [param tag] to this node. Tags are lightweight string labels stored in the node's metadata, so they are saved with the scene and work whether or not the node is inside the tree. Unlike groups, tags need no registry: [method SceneTree.get_nodes_with_tag] finds tagged nodes with a hierarchy walk.
+				Does nothing if the node already has the [param tag]. See also [method has_tag], [method remove_tag], [method get_tags].
+			</description>
+		</method>
 		<method name="add_to_group">
 			<return type="void" />
 			<param index="0" name="group" type="StringName" />
 			<param index="1" name="persistent" type="bool" default="false" />
 			<description>
 				Adds the node to the [param group]. Groups can be helpful to organize a subset of nodes, for example [code]"enemies"[/code] or [code]"collectables"[/code]. See notes in the description, and the group methods in [SceneTree].
-				If [param persistent] is [code]true[/code], the group will be stored when saved inside a [PackedScene]. All groups created and displayed in the Groups dock are persistent.
+				If [param persistent] is [code]true[/code], the group will be stored when saved inside a [PackedScene].
 				[b]Note:[/b] To improve performance, the order of group names is [i]not[/i] guaranteed and may vary between project runs. Therefore, do not rely on the group order.
 				[b]Note:[/b] [SceneTree]'s group methods will [i]not[/i] work on this node if not inside the tree (see [method is_inside_tree]).
 			</description>
@@ -553,6 +561,12 @@
 				Returns [code]true[/code] if this node is an instance load placeholder. See [InstancePlaceholder] and [method set_scene_instance_load_placeholder].
 			</description>
 		</method>
+		<method name="get_tags" qualifiers="const">
+			<return type="PackedStringArray" />
+			<description>
+				Returns all tags on this node, in the order they were added. Returns an empty array if the node has no tags.
+			</description>
+		</method>
 		<method name="get_tree" qualifiers="const">
 			<return type="SceneTree" />
 			<description>
@@ -613,6 +627,13 @@
 			<param index="0" name="path" type="NodePath" />
 			<description>
 				Returns [code]true[/code] if [param path] points to a valid node and its subnames point to a valid [Resource], e.g. [code]Area2D/CollisionShape2D:shape[/code]. Properties that are not [Resource] types (such as nodes or other [Variant] types) are not considered. See also [method get_node_and_resource].
+			</description>
+		</method>
+		<method name="has_tag" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="tag" type="StringName" />
+			<description>
+				Returns [code]true[/code] if this node has the given [param tag]. See also [method add_tag].
 			</description>
 		</method>
 		<method name="is_ancestor_of" qualifiers="const">
@@ -841,6 +862,13 @@
 			<param index="0" name="group" type="StringName" />
 			<description>
 				Removes the node from the given [param group]. Does nothing if the node is not in the [param group]. See also notes in the description, and the [SceneTree]'s group methods.
+			</description>
+		</method>
+		<method name="remove_tag">
+			<return type="void" />
+			<param index="0" name="tag" type="StringName" />
+			<description>
+				Removes the given [param tag] from this node. Does nothing if the node does not have the [param tag].
 			</description>
 		</method>
 		<method name="reparent">

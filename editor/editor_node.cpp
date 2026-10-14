@@ -106,6 +106,7 @@
 #include "editor/import/resource_importer_texture.h"
 #include "editor/import/resource_importer_texture_atlas.h"
 #include "editor/import/resource_importer_wav.h"
+#include "editor/inspector/crete_tags_editor_plugin.h"
 #include "editor/inspector/editor_context_menu_plugin.h"
 #include "editor/inspector/editor_inspector.h"
 #include "editor/inspector/editor_preview_plugins.h"
@@ -8452,6 +8453,10 @@ EditorNode::EditorNode() {
 		Ref<EditorInspectorParticleProcessMaterialPlugin> ppm;
 		ppm.instantiate();
 		EditorInspector::add_inspector_plugin(ppm);
+
+		Ref<EditorInspectorPluginCreteTags> tags_plugin;
+		tags_plugin.instantiate();
+		EditorInspector::add_inspector_plugin(tags_plugin);
 	}
 
 	editor_selection = memnew(EditorSelection);

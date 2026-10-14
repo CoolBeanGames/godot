@@ -172,3 +172,35 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   Binary scan: 11/11 removed strings absent (`FEATURE_GROUPS_DOCK` occurs
   2x, both inside the absence test's doctest strings), 5/5 kept strings
   present. Extension-API dump: 0 removed refs.
+
+## Step 8: Node tags + inspector row; mono glue generation restored (DONE)
+
+- Core: `Node.add_tag/remove_tag/has_tag/get_tags` stored as `_tags`
+  metadata (a `PackedStringArray`), so tags serialize with the scene and work
+  on and off the tree. Corrupt `_tags` values fail soft; the key is removed
+  when the last tag goes. `SceneTree.get_nodes_with_tag` does an O(n)
+  hierarchy walk (deliberate: no registry like groups). All bound + class
+  docs (`Node.xml` x4, `SceneTree.xml` x1); also dropped a stale Groups-dock
+  sentence from the `add_to_group` doc.
+- Editor: `EditorInspectorPluginCreteTags` pins a comma-separated Tags row to
+  the top of every Node inspector, with undo/redo and refresh on
+  `history_changed`. Single-node only for now (`MultiNodeEdit` shows no row).
+- Build fix 1 (main.cpp): `--generate-mono-glue` is a headless cmdline tool
+  again (`cmdline_tool` + `main_args` forwarding + editor hint at the call
+  site). Step 2's no-project exit had broken it, and the generator reads its
+  flag back from `OS::get_cmdline_args()` (= `main_args`), so the parser
+  branch must forward flag + dir or generation silently never starts.
+- Build fix 2 (crete.build.ps1): `Invoke-Native` rewritten (direct call,
+  scoped `Continue`, immediate `$LASTEXITCODE`, `.console.exe`). Two silent
+  failure modes found: `Invoke-Expression "& '...'"` never executed at all,
+  and GUI-subsystem exes never resolve under output capture. Glue had been
+  stale since Step 2; it regenerates now (verified: `GetNodesWithTag`,
+  `AddTag/HasTag/RemoveTag/GetTags` in the C# with converted docs).
+- Test lesson: the runner only creates a `SceneTree` for cases tagged
+  `[SceneTree]` (see `tests/test_main.cpp`); tree-touching cases must carry
+  the tag (the tree case also `REQUIRE`s the singleton). Noted in the test
+  file header.
+- Results: build DONE with 0 errors; focused suites 7/7 (tags) + 11/11
+  (removals); full suite **1383 passed, 0 failed, 3 skipped; 356,578
+  assertions. Status: SUCCESS.** C# API verified in regenerated glue;
+  assemblies rebuilt from it.

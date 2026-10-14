@@ -149,6 +149,13 @@
 				Returns an [Array] containing all nodes inside this tree, that have been added to the given [param group], in scene hierarchy order.
 			</description>
 		</method>
+		<method name="get_nodes_with_tag">
+			<return type="Node[]" />
+			<param index="0" name="tag" type="StringName" />
+			<description>
+				Returns an [Array] containing all nodes inside this tree that have the given [param tag] (see [method Node.add_tag]), in scene hierarchy order. Tag lookup walks the whole tree, so cache the result instead of calling this every frame.
+			</description>
+		</method>
 		<method name="get_processed_tweens">
 			<return type="Tween[]" />
 			<description>

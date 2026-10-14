@@ -1623,6 +1623,44 @@ Vector<Node *> SceneTree::get_nodes_in_group(const StringName &p_group) {
 	return E->value.nodes;
 }
 
+TypedArray<Node> SceneTree::_get_nodes_with_tag(const StringName &p_tag) {
+	_THREAD_SAFE_METHOD_
+	TypedArray<Node> ret;
+	Vector<Node *> nodes = get_nodes_with_tag(p_tag);
+	ret.resize(nodes.size());
+	for (int i = 0; i < nodes.size(); i++) {
+		ret[i] = nodes[i];
+	}
+	return ret;
+}
+
+Vector<Node *> SceneTree::get_nodes_with_tag(const StringName &p_tag) {
+	_THREAD_SAFE_METHOD_
+	Vector<Node *> ret;
+	if (p_tag.is_empty()) {
+		return ret;
+	}
+	Node *root_node = get_root();
+	if (unlikely(root_node == nullptr)) {
+		return ret;
+	}
+	// Crete: tags are plain node metadata, so lookup is an O(n) hierarchy
+	// walk rather than a registry like groups (Step 8 trade-off).
+	Vector<Node *> stack;
+	stack.push_back(root_node);
+	while (!stack.is_empty()) {
+		Node *node = stack[stack.size() - 1];
+		stack.remove_at(stack.size() - 1);
+		if (node->has_tag(p_tag)) {
+			ret.push_back(node);
+		}
+		for (int i = node->get_child_count() - 1; i >= 0; i--) {
+			stack.push_back(node->get_child(i));
+		}
+	}
+	return ret;
+}
+
 void SceneTree::_flush_delete_queue() {
 	_THREAD_SAFE_METHOD_
 
@@ -1947,6 +1985,7 @@ void SceneTree::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_group", "group", "property", "value"), &SceneTree::set_group);
 
 	ClassDB::bind_method(D_METHOD("get_nodes_in_group", "group"), &SceneTree::_get_nodes_in_group);
+	ClassDB::bind_method(D_METHOD("get_nodes_with_tag", "tag"), &SceneTree::_get_nodes_with_tag);
 	ClassDB::bind_method(D_METHOD("get_first_node_in_group", "group"), &SceneTree::get_first_node_in_group);
 	ClassDB::bind_method(D_METHOD("get_node_count_in_group", "group"), &SceneTree::get_node_count_in_group);
 

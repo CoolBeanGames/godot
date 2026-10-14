@@ -2504,6 +2504,59 @@ void Node::remove_from_group(const StringName &p_identifier) {
 #endif
 }
 
+// Crete: node tags live in the "_tags" metadata key (a PackedStringArray), so
+// they serialize with the scene for free and work on and off the tree. Step 8;
+// tags replace the Groups dock in the editor UI.
+
+PackedStringArray Node::get_tags() const {
+	ERR_THREAD_GUARD_V(PackedStringArray());
+	if (!has_meta("_tags")) {
+		return PackedStringArray();
+	}
+	const Variant meta = get_meta("_tags");
+	if (meta.get_type() != Variant::PACKED_STRING_ARRAY) {
+		return PackedStringArray();
+	}
+	return meta;
+}
+
+bool Node::has_tag(const StringName &p_tag) const {
+	ERR_THREAD_GUARD_V(false);
+	if (p_tag.is_empty()) {
+		return false;
+	}
+	return get_tags().has(String(p_tag));
+}
+
+void Node::add_tag(const StringName &p_tag) {
+	ERR_THREAD_GUARD
+	ERR_FAIL_COND_MSG(p_tag.is_empty(), vformat("Cannot add an empty tag to node '%s'.", get_name()));
+
+	PackedStringArray tags = get_tags();
+	if (tags.has(String(p_tag))) {
+		return;
+	}
+	tags.append(String(p_tag));
+	set_meta("_tags", tags);
+	_emit_editor_state_changed();
+}
+
+void Node::remove_tag(const StringName &p_tag) {
+	ERR_THREAD_GUARD
+
+	PackedStringArray tags = get_tags();
+	if (!tags.has(String(p_tag))) {
+		return;
+	}
+	tags.erase(String(p_tag));
+	if (tags.is_empty()) {
+		remove_meta("_tags");
+	} else {
+		set_meta("_tags", tags);
+	}
+	_emit_editor_state_changed();
+}
+
 TypedArray<StringName> Node::_get_groups() const {
 	TypedArray<StringName> groups;
 	List<GroupInfo> gi;
@@ -3787,6 +3840,10 @@ void Node::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("add_to_group", "group", "persistent"), &Node::add_to_group, DEFVAL(false));
 	ClassDB::bind_method(D_METHOD("remove_from_group", "group"), &Node::remove_from_group);
 	ClassDB::bind_method(D_METHOD("is_in_group", "group"), &Node::is_in_group);
+	ClassDB::bind_method(D_METHOD("add_tag", "tag"), &Node::add_tag);
+	ClassDB::bind_method(D_METHOD("remove_tag", "tag"), &Node::remove_tag);
+	ClassDB::bind_method(D_METHOD("has_tag", "tag"), &Node::has_tag);
+	ClassDB::bind_method(D_METHOD("get_tags"), &Node::get_tags);
 	ClassDB::bind_method(D_METHOD("move_child", "child_node", "to_index"), &Node::move_child);
 	ClassDB::bind_method(D_METHOD("get_groups"), &Node::_get_groups);
 	ClassDB::bind_method(D_METHOD("set_owner", "owner"), &Node::set_owner);
