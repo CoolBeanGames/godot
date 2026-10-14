@@ -207,7 +207,7 @@ jobs:
         if: failure()
         shell: bash
         run: |
-          grep "CreteDocks:" /tmp/crete-e2e.log || tail -50 /tmp/crete-e2e.log
+          grep "CreteDocks:" /tmp/crete-e2e.log 2>/dev/null || tail -50 /tmp/crete-e2e.log 2>/dev/null || true
 
   build-linux-templates:
     if: inputs.templates

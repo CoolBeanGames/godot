@@ -130,7 +130,6 @@ extern "C" __declspec(dllimport) void *__stdcall GetConsoleWindow();
 #include "editor/editor_node.h"
 #include "editor/file_system/editor_file_system.h"
 #include "editor/file_system/editor_paths.h"
-#include "editor/gui/progress_dialog.h"
 #include "editor/register_editor_types.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/translations/editor_translation.h"
