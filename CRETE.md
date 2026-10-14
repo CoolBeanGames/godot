@@ -236,3 +236,42 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   silently produce a 0-byte log (GUI-subsystem capture quirk, same family
   as the Step 8 `Invoke-Expression` find). Pipe form
   `... --test 2>&1 | Select-Object -Last 5` works; use it for full runs.
+
+## Step 10: GitHub bottom dock (git CLI, C#) (DONE)
+
+- New `GodotTools/GitHub/` in the GodotTools assembly (ships built-in, no
+  C++ changes — wired with one `AddDock` next to `MSBuildPanel`):
+  - `GitCli.cs`: static wrapper over the git CLI. Detection via
+    `crete/github/git_path` editor setting (default `git` on PATH);
+    `GIT_TERMINAL_PROMPT=0` + `LC_ALL=C` on every call so network ops
+    fail fast instead of hanging on auth prompts. Parses
+    `status --porcelain=v1 --branch` (branch/upstream/ahead/behind,
+    staged/unstaged/untracked/conflict, rename arrows, C-quoting),
+    branch list, `diff HEAD`, stage-all, commit, push, ff-only pull,
+    switch/create/merge, per-file revert (`checkout --` for tracked,
+    `clean -f` for untracked).
+  - `CreteGitHubDock.cs`: bottom `EditorDock` (VcsBranches icon):
+    branch switcher + New/Merge dialogs, Push/Pull/Refresh, changes
+    list with per-file diff view, commit-message box (stage-all +
+    commit), revert-selected behind a confirmation dialog. Empty
+    states for git-missing and not-a-repository. Every refresh prints
+    one `CreteGitHub: git=.. repo=.. branch=.. files=..` console line
+    (user feedback + E2E hook).
+- C# lesson: editor-setting defaults must use `EditorDef` (via
+  `using static GodotTools.Internals.Globals`). `SetInitialValue(...,
+  update_current: false)` leaves NO current value, so `GetSetting`
+  comes back empty — this shipped git-not-found until E2E caught it.
+- Status-bar `branch ⇄ state` from the plan is deferred to P3, which
+  owns the status bar (no C# API reaches it); P3 will run its own
+  lightweight `git branch --show-current` poll.
+- Verified: build DONE; E2E repo project ->
+  `git=yes repo=yes branch=main files=6 ahead=0 behind=0`; E2E
+  non-repo project -> `repo=no` empty state, exit 0, no errors. Every
+  git shape the dock shells out to was executed by hand against the
+  scratch repo (push-with-no-remote fails in 0.1 s, no hang). Button
+  click paths are compile-checked signal wiring; not clickable
+  headless. Full suite **1385 passed, 0 failed, 3 skipped; 356,585
+  assertions. Status: SUCCESS.**
+- Pre-existing note: headless editor open prints
+  `WARNING: Property not found: 'xr/openxr/enabled'` (Step 3
+  leftover), unrelated to this step.

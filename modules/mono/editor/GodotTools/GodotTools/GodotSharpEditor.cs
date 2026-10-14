@@ -587,6 +587,9 @@ namespace GodotTools
             MSBuildPanel = new MSBuildPanel();
             AddDock(MSBuildPanel);
 
+            // Crete: built-in GitHub bottom dock (git CLI, no libgit).
+            AddDock(new GitHub.CreteGitHubDock());
+
             AddChild(new HotReloadAssemblyWatcher { Name = "HotReloadAssemblyWatcher" });
 
             _menuPopup = new PopupMenu
