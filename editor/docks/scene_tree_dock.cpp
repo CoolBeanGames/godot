@@ -3474,7 +3474,7 @@ void SceneTreeDock::set_edited_scene(Node *p_scene) {
 		if (fname.is_empty()) {
 			fname = p_scene->get_name();
 		}
-		set_title(TTR("Hierarchy") + " — " + fname);
+		set_title(TTR("Hierarchy") + U" — " + fname);
 	}
 }
 
@@ -5070,7 +5070,7 @@ SceneTreeDock::SceneTreeDock(Node *p_scene_root, EditorSelection *p_editor_selec
 	filter = memnew(LineEdit);
 	filter->set_name("CreteHierarchyFilter");
 	filter->set_h_size_flags(SIZE_EXPAND_FILL);
-	filter->set_placeholder(TTRC("Filter nodes… (t:Texture, g:Group)"));
+	filter->set_placeholder(TTRC(U"Filter nodes… (t:Texture, g:Group)"));
 	filter->set_accessibility_name(TTRC("Filter Nodes"));
 	filter->set_tooltip_text(TTRC("Filter nodes by entering a part of their name, type (if prefixed with \"type:\" or \"t:\")\nor group (if prefixed with \"group:\" or \"g:\"). Filtering is case-insensitive."));
 	filter_row_hbc->add_child(filter);

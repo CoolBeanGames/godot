@@ -779,7 +779,7 @@ void FileSystemDock::_set_current_path_line_edit_text(const String &p_path) {
 		current_path_line_edit->set_text(current_path);
 	}
 	// Crete: Project tab shows the browsed path.
-	set_title(TTR("Project") + " — " + (p_path == "Favorites" ? TTR("Favorites") : p_path));
+	set_title(TTR("Project") + U" — " + (p_path == "Favorites" ? TTR("Favorites") : p_path));
 }
 
 void FileSystemDock::_navigate_to_path(const String &p_path, bool p_select_in_favorites, bool p_grab_focus) {

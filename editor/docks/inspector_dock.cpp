@@ -639,10 +639,10 @@ void InspectorDock::_update_object_header() {
 		Ref<Script> scr = node->get_script();
 		if (scr.is_valid()) {
 			String spath = scr->get_path();
-			sub += " · " + (spath.is_empty() ? TTR("[built-in script]") : spath.get_file());
+			sub += String(U" · ") + (spath.is_empty() ? TTR("[built-in script]") : spath.get_file());
 		}
 		if (node->is_unique_name_in_owner()) {
-			sub += " · %" + node->get_name();
+			sub += String(U" · %") + node->get_name();
 		}
 		object_header_class->set_text(sub);
 	} else if (current->is_class("Resource")) {

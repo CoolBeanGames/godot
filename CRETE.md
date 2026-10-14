@@ -647,3 +647,37 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   skipped; 356,627 assertions. Status: SUCCESS.** Commit on
   `crete`; only CI itself can prove the Linux/Web/Steam-SDK
   paths.
+
+## Pixel sweep fixes (post-Step 19, DONE)
+
+- Mojibake: every Crete `×—…·` literal rendered as Latin-1
+  (`String(const char*)` is `append_latin1` in Godot 4, not
+  UTF-8). Fixed 12 sites with the stock `U"..."` convention
+  (`editor_node.cpp` status/banner/git, `scene_tree_dock.cpp`
+  title/filter, `filesystem_dock.cpp` title,
+  `inspector_dock.cpp` subtitle, `editor_bottom_panel.cpp`
+  import button, tags plugin placeholder/tooltip). Raw log
+  bytes now single-encoded (`C3 97`); screenshots confirm.
+- Menu order is now File Edit Project Scene Debug Editor Help
+  (mockup-exact; was Scene before Project).
+- `%Player` subtitle was missing because the test scenes put
+  `unique_name_in_owner=true` in the `[node]` header, which
+  the text loader silently ignores (usage is STORAGE: it must
+  be a property line). Fixed the local scene + the CI E2E
+  heredoc; new `uniq=[yes|Level01]` marker + grep locks it.
+- Removed the `CretePublishScreen` GD.Print debug line (leaked
+  into the status Output readout on every Publish switch).
+- `CODEOWNERS` gains a trailing Crete section (`crete_steam_
+  stub`, `godotsteam`, `CRETE.md`, `crete.build.ps1`); new
+  files keep the stock Godot header (the hook enforces it).
+- Sweep shots (`/tmp/crete-sweep-*.png`): main window,
+  hierarchy, inspector (root + scripted `%` node with tags),
+  Publish screen, Console, transport, status bar — all match
+  the mockup. Note: the editor persists the active main
+  screen, so pixel runs must Ctrl+F1 back to Scene first;
+  GUI runs also write `editor_layout.cfg`, which flips the
+  E2E to the saved-state branch (no `dock_9` marker) — wipe
+  it for CI-faithful local runs.
+- Results: full suite **1387 passed, 0 failed, 3 skipped,
+  356,627 assertions. Status: SUCCESS.** E2E 9/9 markers
+  green incl. `uniq`. prek 0.5.5 fully green.

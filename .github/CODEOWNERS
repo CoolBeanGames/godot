@@ -292,3 +292,10 @@
 *.py                                          @godotengine/buildsystem
 SConstruct                                    @godotengine/buildsystem
 SCsub                                         @godotengine/buildsystem
+
+# Crete (fork-owned paths; keep last to survive upstream rebases)
+
+/modules/crete_steam_stub/                    @CoolBeanGames
+/modules/godotsteam                           @CoolBeanGames
+/CRETE.md                                     @CoolBeanGames
+/crete.build.ps1                              @CoolBeanGames

@@ -374,7 +374,7 @@ EditorBottomPanel::EditorBottomPanel() :
 	crete_import_button = memnew(Button);
 	bottom_hbox->add_child(crete_import_button);
 	crete_import_button->set_theme_type_variation("BottomPanelButton");
-	crete_import_button->set_text(TTRC("+ Import…"));
+	crete_import_button->set_text(TTRC(U"+ Import…"));
 	crete_import_button->set_tooltip_text(TTRC("Copy files from disk into the current Project folder."));
 	crete_import_button->connect(SceneStringName(pressed), callable_mp(this, &EditorBottomPanel::_crete_import_pressed));
 

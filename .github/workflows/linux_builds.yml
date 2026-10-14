@@ -181,7 +181,8 @@ jobs:
 
           [node name="Level01" type="Node2D"]
 
-          [node name="Player" type="CharacterBody2D" parent="." unique_name_in_owner=true]
+          [node name="Player" type="CharacterBody2D" parent="."]
+          unique_name_in_owner = true
           metadata/_tags = PackedStringArray("player", "controllable", "save-me")
           script = ExtResource("1")
 
@@ -196,6 +197,7 @@ jobs:
           grep -q "dock_9=\[FileSystem,Output,GitHub,Agents,Debugger,Animation,Shader Editor,Audio,MSBuild,Publish\]" /tmp/crete-e2e.log
           grep -q "signals2=\[Signals (1)\]" /tmp/crete-e2e.log
           grep -q "lock_action=locked" /tmp/crete-e2e.log
+          grep -q "uniq=\[yes|Level01\]" /tmp/crete-e2e.log
           grep -q "banner=yes" /tmp/crete-e2e.log
           grep -q "thumbs=on" /tmp/crete-e2e.log
           grep -q "hscroll=off" /tmp/crete-e2e.log

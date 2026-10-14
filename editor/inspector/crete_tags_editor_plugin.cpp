@@ -1,9 +1,9 @@
 /**************************************************************************/
-/*  crete_tags_editor_plugin.cpp                                        */
+/*  crete_tags_editor_plugin.cpp                                          */
 /**************************************************************************/
 /*                         This file is part of:                          */
-/*                             CRETE ENGINE                               */
-/*                   https://github.com/CoolBeanGames                     */
+/*                             GODOT ENGINE                               */
+/*                        https://godotengine.org                         */
 /**************************************************************************/
 /* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
 /* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
@@ -57,8 +57,8 @@ void EditorInspectorPluginCreteTags::parse_begin(Object *p_object) {
 	LineEdit *edit = memnew(LineEdit);
 	edit->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	edit->set_text(String(", ").join(node->get_tags()));
-	edit->set_placeholder(TTR("comma-separated · just type"));
-	edit->set_tooltip_text(TTR("comma-separated · just type"));
+	edit->set_placeholder(TTR(U"comma-separated · just type"));
+	edit->set_tooltip_text(TTR(U"comma-separated · just type"));
 	edit->set_clear_button_enabled(true);
 	row->add_child(edit);
 	tags_edit_id = edit->get_instance_id();

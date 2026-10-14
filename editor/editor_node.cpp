@@ -1799,7 +1799,7 @@ void EditorNode::_crete_status_tick() {
 	crete_status_renderer->set_text(method);
 	if (get_viewport() != nullptr) {
 		Vector2 vp = get_viewport()->get_visible_rect().size;
-		crete_status_viewport->set_text(vformat("%d×%d", int(vp.x), int(vp.y)));
+		crete_status_viewport->set_text(vformat(U"%d×%d", int(vp.x), int(vp.y)));
 	}
 	if (crete_status_tick_count % 10 == 1) {
 		crete_status_git->set_text(_crete_git_status());
@@ -1889,9 +1889,9 @@ String EditorNode::_crete_git_status() {
 	}
 	int changes = lines.size() - 1;
 	if (changes <= 0 && !head.contains_char('[')) {
-		return vformat(TTR("%s · clean"), branch);
+		return vformat(TTR(U"%s · clean"), branch);
 	}
-	return vformat(TTR("%s · %d"), branch, changes);
+	return vformat(TTR(U"%s · %d"), branch, changes);
 }
 
 void EditorNode::_open_command_palette() {
@@ -6543,7 +6543,7 @@ void EditorNode::_load_editor_layout() {
 		static const char *ext_names[] = { "none", "Visual Studio", "VS4Mac", "MonoDevelop", "VS Code", "Rider", "Custom", "Fleet" };
 		int ext_id = int(EDITOR_GET("dotnet/editor/external_editor"));
 		String ext = (ext_id >= 0 && ext_id < 8) ? ext_names[ext_id] : vformat("id %d", ext_id);
-		log->add_message(vformat("Crete editor (Godot %d.%d.%d base) — %s · External editor: %s",
+		log->add_message(vformat(U"Crete editor (Godot %d.%d.%d base) — %s · External editor: %s",
 								 GODOT_VERSION_MAJOR, GODOT_VERSION_MINOR, GODOT_VERSION_PATCH, method, ext),
 				EditorLog::MSG_TYPE_EDITOR);
 	}
@@ -6582,6 +6582,7 @@ void EditorNode::_crete_e2e_docks_step2() {
 	print_line("CreteDocks: header=[" + (hname ? hname->get_text() : "?") + "|" + (hclass ? hclass->get_text() : "?") + "]");
 	Node *player = get_edited_scene()->find_child("Player", true, false);
 	print_line("CreteDocks: tags=[" + String(",").join(player->get_tags()) + "]");
+	print_line("CreteDocks: uniq=[" + String(player->is_unique_name_in_owner() ? "yes" : "no") + "|" + (player->get_owner() ? player->get_owner()->get_name() : "?") + "]");
 	LineEdit *filter = Object::cast_to<LineEdit>(SceneTreeDock::get_singleton()->find_child("CreteHierarchyFilter", true, false));
 	Button *add = Object::cast_to<Button>(SceneTreeDock::get_singleton()->find_child("CreteHierarchyAdd", true, false));
 	bool own_row = filter && add && filter->get_parent() != add->get_parent();
@@ -9287,13 +9288,14 @@ EditorNode::EditorNode() {
 	crete_edit_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
 	_add_to_main_menu(TTRC("Edit"), crete_edit_menu);
 
-	file_menu = memnew(PopupMenu);
-	file_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
-	_add_to_main_menu(TTRC("Scene"), file_menu);
-
+	// Crete: mockup menu order is File Edit Project Scene Debug Editor Help.
 	project_menu = memnew(PopupMenu);
 	project_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
 	_add_to_main_menu(TTRC("Project"), project_menu);
+
+	file_menu = memnew(PopupMenu);
+	file_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
+	_add_to_main_menu(TTRC("Scene"), file_menu);
 
 	debug_menu = memnew(PopupMenu);
 	// Options are added and handled by DebuggerEditorPlugin, do not rebuild.

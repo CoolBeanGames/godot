@@ -792,7 +792,6 @@ namespace GodotTools
                 AddDock(_publishDock);
             }
             _publishInScreen = visible;
-            GD.Print($"CretePublishScreen: visible={visible} content_parent={content.GetParent()?.GetPath() ?? "<none>"}");
         }
 
         private void E2EPublishScreen()
