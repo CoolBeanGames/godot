@@ -461,3 +461,40 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   (`crete-step15g.png`).
 - Results: build DONE; full suite **1387 passed, 0 failed, 3
   skipped; 356,627 assertions. Status: SUCCESS.**
+
+## Step 16 (P3C): Publish center tab (DONE)
+
+- C#: `GodotSharpEditor` is now a main-screen plugin named
+  `Publish` (`_HasMainScreen`/`_MakeVisible`; no `_Handles`/
+  `_GetState` overrides exist, so sub-editor dispatch and layout
+  state are unaffected). Selecting the tab reparents the Publish
+  dock's body (`CretePublishDock.ContentRoot`) into a padded
+  `MarginContainer` under `GetEditorMainScreen()` and removes the
+  bottom-dock tab; deselecting moves everything back. `_ExitTree`
+  restores the body on shutdown. No new C++ interop was needed:
+  stock `_has_main_screen`/`_make_visible` machinery plus the
+  already-bound `set_main_screen_editor`/`add_dock`/`remove_dock`.
+- C++: new `editor/editor_publish` shortcut (Ctrl+F5, macOS
+  Meta+Ctrl+5) auto-attaches to the strip button + command
+  palette; `shortcut_input` branch selects by name; the 2D/3D
+  dropdown now stays sticky on non-Scene screens (Publish keeps
+  the last renderer instead of forcing 2D).
+- E2E: `-- --crete-e2e-publish-screen` headless run prints
+  `visible=True content_parent=.../@EditorMainScreen@...` then
+  `visible=False content_parent=.../@EditorBottomPanel@...`,
+  exit 0. (The RID-leak ERROR lines in that log are pre-existing
+  `--quit-after` teardown noise, identical without the flag.)
+- GUI proof: `Scene | 3D dropdown | Game | Publish` strip
+  (`crete-step16a.png`); Ctrl+F5 fills the center with the Publish
+  UI, Publish pressed, bottom Publish tab gone (`crete-step16b*`);
+  Ctrl+F1 restores Scene + dock tab (`crete-step16c*`); mouse
+  click selects Publish, tooltip shows the Ctrl+F5 shortcut
+  (`crete-step16g.png`).
+- Harness lessons: GUI clicks need `-WaitForCSharp` (new
+  `crete-shot.ps1` switch polling the bottom tab row) because the
+  C# strip tab appears ~30 s after launch and shifts the centered
+  strip; and click coordinates must be pixel-measured
+  (`GetPixel` runs), never eyeballed — Publish sits at
+  x 1390-1450, y 38-52, not where it looks.
+- Results: build DONE; full suite **1387 passed, 0 failed, 3
+  skipped; 356,627 assertions. Status: SUCCESS.**

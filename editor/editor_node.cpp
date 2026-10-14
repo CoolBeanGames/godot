@@ -414,6 +414,9 @@ void EditorNode::shortcut_input(const Ref<InputEvent> &p_event) {
 			editor_main_screen->select(EditorMainScreen::EDITOR_SCRIPT);
 		} else if (ED_IS_SHORTCUT("editor/editor_game", p_event)) {
 			editor_main_screen->select(EditorMainScreen::EDITOR_GAME);
+		} else if (ED_IS_SHORTCUT("editor/editor_publish", p_event)) {
+			// Crete: the Publish screen is a C# plugin, so select it by name.
+			editor_main_screen->select_by_name("Publish");
 		} else if (ED_IS_SHORTCUT("editor/editor_help", p_event)) {
 			emit_signal(SNAME("request_help_search"), "");
 		} else if (ED_IS_SHORTCUT("editor/editor_next", p_event)) {
@@ -1668,7 +1671,12 @@ void EditorNode::_crete_sync_scene_dim() {
 		return;
 	}
 	EditorPlugin *selected = editor_main_screen->get_selected_plugin();
-	int want = (selected != nullptr && selected->get_plugin_name() == "3D") ? 1 : 0;
+	String selected_name = selected != nullptr ? selected->get_plugin_name() : String();
+	if (selected_name != "Scene" && selected_name != "3D") {
+		// Crete: other screens (Game, Script, Publish) keep the last renderer.
+		return;
+	}
+	int want = selected_name == "3D" ? 1 : 0;
 	scene_dim_option->set_block_signals(true);
 	scene_dim_option->select(want);
 	scene_dim_option->set_block_signals(false);
@@ -8941,11 +8949,14 @@ EditorNode::EditorNode() {
 	ED_SHORTCUT_AND_COMMAND("editor/editor_3d", TTRC("Open 3D Workspace"), KeyModifierMask::CTRL | Key::F2);
 	ED_SHORTCUT_AND_COMMAND("editor/editor_script", TTRC("Open Script Editor"), KeyModifierMask::CTRL | Key::F3);
 	ED_SHORTCUT_AND_COMMAND("editor/editor_game", TTRC("Open Game View"), KeyModifierMask::CTRL | Key::F4);
+	// Crete: the Publish center tab (a C# main screen) shares the Ctrl+F row.
+	ED_SHORTCUT_AND_COMMAND("editor/editor_publish", TTRC("Open Publish View"), KeyModifierMask::CTRL | Key::F5);
 
 	ED_SHORTCUT_OVERRIDE("editor/editor_scene", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_1);
 	ED_SHORTCUT_OVERRIDE("editor/editor_3d", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_2);
 	ED_SHORTCUT_OVERRIDE("editor/editor_script", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_3);
 	ED_SHORTCUT_OVERRIDE("editor/editor_game", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_4);
+	ED_SHORTCUT_OVERRIDE("editor/editor_publish", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_5);
 
 	ED_SHORTCUT_AND_COMMAND("editor/editor_next", TTRC("Open the next Editor"));
 	ED_SHORTCUT_AND_COMMAND("editor/editor_prev", TTRC("Open the previous Editor"));

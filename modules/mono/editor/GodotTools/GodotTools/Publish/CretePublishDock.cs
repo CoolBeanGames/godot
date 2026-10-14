@@ -45,6 +45,11 @@ namespace GodotTools.Publish
         private RichTextLabel _log = null!;
         private Label _status = null!;
         private Button _cancelButton = null!;
+        private VBoxContainer _contentRoot = null!;
+
+        // The whole body, so the Publish main screen can reparent it into
+        // the center view while the tab is selected (Step 16).
+        internal VBoxContainer ContentRoot => _contentRoot;
 
         private List<ExportPreset> _presets = new();
         private readonly List<string> _pendingLines = new();
@@ -76,6 +81,7 @@ namespace GodotTools.Publish
                 SizeFlagsVertical = SizeFlags.ExpandFill,
             };
             AddChild(root);
+            _contentRoot = root;
 
             // Preset row.
             var presetBar = new HBoxContainer();

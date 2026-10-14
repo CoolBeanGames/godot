@@ -54,6 +54,12 @@ namespace GodotTools
         public GodotIdeManager GodotIdeManager { get; private set; }
 
         public MSBuildPanel MSBuildPanel { get; private set; }
+
+        // Crete: the Publish main screen (Step 16) owns no UI of its own;
+        // it reparents the bottom dock's content into the center view.
+        private Publish.CretePublishDock _publishDock;
+        private MarginContainer _publishScreen;
+        private bool _publishInScreen;
 #nullable enable
 
         public bool SkipBuildBeforePlaying { get; set; } = false;
@@ -594,7 +600,25 @@ namespace GodotTools
             AddDock(new Agents.CreteAgentsDock());
 
             // Crete: built-in Publish bottom dock (itch.io + Steam uploads).
-            AddDock(new Publish.CretePublishDock());
+            _publishDock = new Publish.CretePublishDock();
+            AddDock(_publishDock);
+
+            // Crete: Publish center-tab shell (Step 16). Starts hidden in the
+            // main-screen column; _MakeVisible moves the dock body here.
+            _publishScreen = new MarginContainer
+            {
+                Name = "Publish",
+                SizeFlagsVertical = Control.SizeFlags.ExpandFill,
+                Visible = false,
+            };
+            _publishScreen.AddThemeConstantOverride("margin_left", 12);
+            _publishScreen.AddThemeConstantOverride("margin_right", 12);
+            _publishScreen.AddThemeConstantOverride("margin_top", 8);
+            _publishScreen.AddThemeConstantOverride("margin_bottom", 8);
+            EditorInterface.Singleton.GetEditorMainScreen().AddChild(_publishScreen);
+
+            if (Godot.OS.GetCmdlineUserArgs().Contains("--crete-e2e-publish-screen"))
+                CallDeferred(nameof(E2EPublishScreen));
 
             AddChild(new HotReloadAssemblyWatcher { Name = "HotReloadAssemblyWatcher" });
 
@@ -743,6 +767,40 @@ namespace GodotTools
             AddChild(GodotIdeManager);
         }
 
+        // Crete: this plugin's main screen is the Publish center tab (Step 16).
+        public override string _GetPluginName() => "Publish";
+
+        public override bool _HasMainScreen() => true;
+
+        public override void _MakeVisible(bool visible)
+        {
+            if (_publishDock == null || _publishScreen == null || visible == _publishInScreen)
+                return;
+            var content = _publishDock.ContentRoot;
+            if (visible)
+            {
+                RemoveDock(_publishDock);
+                _publishDock.RemoveChild(content);
+                _publishScreen.AddChild(content);
+                _publishScreen.Show();
+            }
+            else
+            {
+                _publishScreen.Hide();
+                _publishScreen.RemoveChild(content);
+                _publishDock.AddChild(content);
+                AddDock(_publishDock);
+            }
+            _publishInScreen = visible;
+            GD.Print($"CretePublishScreen: visible={visible} content_parent={content.GetParent()?.GetPath() ?? "<none>"}");
+        }
+
+        private void E2EPublishScreen()
+        {
+            EditorInterface.Singleton.SetMainScreenEditor("Publish");
+            EditorInterface.Singleton.SetMainScreenEditor("Scene");
+        }
+
         public override void _DisablePlugin()
         {
             base._DisablePlugin();
@@ -754,6 +812,18 @@ namespace GodotTools
         {
             _errorDialog?.QueueFree();
             _confirmCreateSlnDialog?.QueueFree();
+
+            // Crete: leave the Publish body parented to its dock on shutdown.
+            if (_publishInScreen && IsInstanceValid(_publishDock) && IsInstanceValid(_publishScreen))
+            {
+                var content = _publishDock.ContentRoot;
+                if (IsInstanceValid(content) && content.GetParent() == _publishScreen)
+                {
+                    _publishScreen.RemoveChild(content);
+                    _publishDock.AddChild(content);
+                }
+                _publishInScreen = false;
+            }
         }
 
         private void OnSettingsChanged()
