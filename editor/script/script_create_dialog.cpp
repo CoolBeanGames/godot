@@ -902,7 +902,7 @@ ScriptCreateDialog::ScriptCreateDialog() {
 	for (int i = 0; i < ScriptServer::get_language_count(); i++) {
 		String lang = ScriptServer::get_language(i)->get_name();
 		language_menu->add_item(lang);
-		if (lang == "GDScript") {
+		if (lang == "C#") {
 			default_language = i;
 		}
 	}
@@ -913,10 +913,10 @@ ScriptCreateDialog::ScriptCreateDialog() {
 		language_menu->set_auto_translate_mode(AUTO_TRANSLATE_MODE_ALWAYS);
 		language_menu->add_item(TTR("No Scripting Languages Available"));
 	} else if (default_language >= 0) {
-		// Normal Case: GDScript is available, select it.
+		// Normal Case: C# is available, select it. (Crete: C# is the only language.)
 		language_menu->select(default_language);
 	} else {
-		// Edge Case 2: Languages exist (like C#), but GDScript is disabled.
+		// Edge Case 2: Languages exist, but C# is disabled.
 		language_menu->select(0);
 	}
 

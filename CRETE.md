@@ -204,3 +204,35 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   (removals); full suite **1383 passed, 0 failed, 3 skipped; 356,578
   assertions. Status: SUCCESS.** C# API verified in regenerated glue;
   assemblies rebuilt from it.
+
+## Step 9: C# default, VS Code default, auto solution + .vscode (DONE)
+
+- New-script dialog (`script_create_dialog.cpp`): default language is now
+  `C#` instead of `GDScript` (which can't exist here); single-language select
+  falls through to index 0 either way.
+- GodotTools (`GodotSharpEditor.cs`):
+  - `dotnet/editor/external_editor` default `None` -> `VsCode`, so C# files
+    open in VS Code out of the box (`OverridesExternalEditor` goes true).
+  - `_EnablePlugin` auto-creates the .sln + .csproj when both are missing
+    (previously manual `C# > Create C# solution` only; the create call itself
+    was dead code with no callers). Partial/broken states still go through
+    the manual confirm-dialog path. Mirrors the existing build-button
+    fallback; generation is template file writes, no `dotnet` CLI needed.
+  - Fresh solutions also scaffold `.vscode/`: `tasks.json` (default Debug
+    build + ExportRelease build), `launch.json` (launch Crete with
+    `--path`, attach-to-process, build as pre-launch), `extensions.json`
+    (recommends the C# Dev Kit). Best-effort, never overwrites.
+- C# notes: `GodotTools.Utils.OS` shadows `Godot.OS` in this file (use the
+  `Godot.OS` qualifier for `GetExecutablePath`); same for `System.IO.Directory`
+  vs `GodotTools.Utils.Directory`.
+- Tests: new `Crete C# defaults` suite (exactly one language, it is C# /
+  `CSharpScript` / `cs`; no GDScript). GodotTools behaviors verified
+  end-to-end instead: fresh headless `--editor` open of a scratch project
+  produced `Step9E2E.sln` + `.csproj` + all three `.vscode` files (JSON
+  parsed OK); reopen left the `.sln` byte-identical with no errors.
+- Results: build DONE with 0 errors; focused 2/2; full suite **1385
+  passed, 0 failed, 3 skipped; 356,585 assertions. Status: SUCCESS.**
+- Test-harness note: `./bin/*.mono.exe --headless --test > file 2>&1` can
+  silently produce a 0-byte log (GUI-subsystem capture quirk, same family
+  as the Step 8 `Invoke-Expression` find). Pipe form
+  `... --test 2>&1 | Select-Object -Last 5` works; use it for full runs.

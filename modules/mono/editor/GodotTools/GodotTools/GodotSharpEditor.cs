@@ -112,8 +112,88 @@ namespace GodotTools
                 return false;
             }
 
+            CreateVsCodeWorkspaceIfNeeded();
+
             _ShowDotnetFeatures();
             return true;
+        }
+
+        // Crete: scaffold VS Code build/debug tasks alongside a fresh solution.
+        // Best effort and never overwrites existing files.
+        private static void CreateVsCodeWorkspaceIfNeeded()
+        {
+            try
+            {
+                string projectDir = Path.GetDirectoryName(GodotSharpDirs.ProjectCsProjPath)!;
+                string csprojFile = Path.GetFileName(GodotSharpDirs.ProjectCsProjPath);
+                string vscodeDir = Path.Combine(projectDir, ".vscode");
+                System.IO.Directory.CreateDirectory(vscodeDir);
+
+                string tasksJson = $@"{{
+    ""version"": ""2.0.0"",
+    ""tasks"": [
+        {{
+            ""label"": ""build"",
+            ""command"": ""dotnet"",
+            ""type"": ""process"",
+            ""args"": [""build"", ""${{workspaceFolder}}/{csprojFile}"", ""-c"", ""Debug""],
+            ""problemMatcher"": ""$msCompile"",
+            ""group"": {{ ""kind"": ""build"", ""isDefault"": true }}
+        }},
+        {{
+            ""label"": ""build-release"",
+            ""command"": ""dotnet"",
+            ""type"": ""process"",
+            ""args"": [""build"", ""${{workspaceFolder}}/{csprojFile}"", ""-c"", ""ExportRelease""],
+            ""problemMatcher"": ""$msCompile"",
+            ""group"": ""build""
+        }}
+    ]
+}}
+";
+
+                string engineExe = Godot.OS.GetExecutablePath().Replace("\\", "/");
+                string launchJson = $@"{{
+    ""version"": ""0.2.0"",
+    ""configurations"": [
+        {{
+            ""name"": ""Launch Crete project"",
+            ""type"": ""coreclr"",
+            ""request"": ""launch"",
+            ""program"": ""{engineExe}"",
+            ""args"": [""--path"", ""${{workspaceFolder}}""],
+            ""cwd"": ""${{workspaceFolder}}"",
+            ""preLaunchTask"": ""build""
+        }},
+        {{
+            ""name"": ""Attach to Crete"",
+            ""type"": ""coreclr"",
+            ""request"": ""attach"",
+            ""processId"": ""${{command:pickProcess}}""
+        }}
+    ]
+}}
+";
+
+                const string extensionsJson = @"{
+    ""recommendations"": [""ms-dotnettools.csdevkit""]
+}
+";
+
+                WriteFileIfMissing(Path.Combine(vscodeDir, "tasks.json"), tasksJson);
+                WriteFileIfMissing(Path.Combine(vscodeDir, "launch.json"), launchJson);
+                WriteFileIfMissing(Path.Combine(vscodeDir, "extensions.json"), extensionsJson);
+            }
+            catch (Exception e)
+            {
+                GD.PushError("Failed to create VS Code workspace files. Exception message: " + e.Message);
+            }
+        }
+
+        private static void WriteFileIfMissing(string path, string content)
+        {
+            if (!File.Exists(path))
+                File.WriteAllText(path, content);
         }
 
         private void _ShowDotnetFeatures()
@@ -539,6 +619,12 @@ namespace GodotTools
             {
                 ApplyNecessaryChangesToSolution();
             }
+            else if (CreateProjectSolutionIfNeeded() && File.Exists(GodotSharpDirs.ProjectCsProjPath))
+            {
+                // Crete: C# is the only language, so a project without one gets
+                // a fresh solution on open instead of waiting for the manual menu.
+                _ShowDotnetFeatures();
+            }
             else
             {
                 MSBuildPanel.Close();
@@ -549,7 +635,8 @@ namespace GodotTools
             _menuPopup.IdPressed += _MenuOptionPressed;
 
             // External editor settings
-            EditorDef(Settings.ExternalEditor, Variant.From(ExternalEditorId.None));
+            // Crete: C# opens in VS Code out of the box.
+            EditorDef(Settings.ExternalEditor, Variant.From(ExternalEditorId.VsCode));
             EditorDef(Settings.CustomExecPath, "");
             EditorDef(Settings.CustomExecPathArgs, "");
             EditorDef(Settings.VerbosityLevel, Variant.From(VerbosityLevelId.Normal));
