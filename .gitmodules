@@ -1,0 +1,4 @@
+[submodule "modules/godotsteam"]
+	path = modules/godotsteam
+	url = https://github.com/CoolBeanGames/GodotSteam.git
+	branch = godot4

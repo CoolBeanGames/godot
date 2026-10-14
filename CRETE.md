@@ -319,3 +319,36 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   (see `BuildOutputView`); `TextEdit` has no `ScrollToLine`.
 - Results: build DONE; full suite **1385 passed, 0 failed, 3
   skipped; 356,585 assertions. Status: SUCCESS.**
+
+## Step 12: GodotSteam vendored + SDK-gated stub (DONE)
+
+- Upstream moved: Gramps/GodotSteam on GitHub is a dead pointer; the
+  real repo is `codeberg.org/godotsteam/godotsteam`, module branch
+  `godot4` (HEAD 4eb6cce, Oct 2026 — actively maintained, 4.7-drift
+  risk low; needs Steamworks SDK 1.65).
+- Fork: [CoolBeanGames/GodotSteam](https://github.com/CoolBeanGames/GodotSteam)
+  (`godot4` branch = upstream 4eb6cce, full history kept for future
+  merges), added as `modules/godotsteam` submodule pinned to that
+  commit. Clone with `--recurse-submodules`.
+- SDK gate in `crete.build.ps1`: if
+  `modules/godotsteam/sdk/redistributable_bin/win64/steam_api64.lib`
+  exists, build the real module (`module_godotsteam_enabled=yes`);
+  else build `crete_steam_stub` instead. Local builds always take the
+  stub path (SDK is not redistributable); P4 CI injects the SDK as a
+  secret for release builds. **Not yet verified: full GodotSteam
+  compile against our 4.7 fork needs the SDK, so it happens in CI.**
+- Stub (`modules/crete_steam_stub/`, mutually exclusive with the real
+  module): registers the same `Steam` class + singleton with the same
+  method shapes for `steamInitEx` (returns
+  `{status: 1, verbal: ...}`, FAILED_GENERIC shape-compatible),
+  `isSteamRunning` (false), `restartAppIfNecessary` (false),
+  `getAppID` (0), plus an `isCreteStub()` marker the real module
+  never has. Glue regen picked it up automatically: C# `Steam` class
+  with static `SteamInitEx/GetAppID/IsCreteStub` exists in every
+  build; SDK builds expand it to the full API.
+- Tests: new `Crete Steam` suite (singleton registered; stub branch
+  asserts the honest-failure values, SDK branch asserts surface
+  existence without calling init).
+- Results: build DONE; focused 2/2 (13 assertions); full suite
+  **1387 passed, 0 failed, 3 skipped; 356,627 assertions. Status:
+  SUCCESS.**
