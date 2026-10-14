@@ -437,3 +437,27 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   — coherent dark look accepted).
 - Results: build DONE; full suite **1387 passed, 0 failed, 3
   skipped; 356,627 assertions. Status: SUCCESS.**
+
+## Step 15 (P3B): main strip `Scene | renderer dropdown | Game` (DONE)
+
+- Strip: old `2D` button renamed `Scene`; old `3D` button detached
+  from the strip (kept alive for shortcuts/selection) and replaced
+  with an `OptionButton` (`crete_3d_dropdown`) listing 2D/3D;
+  `Script` hidden from the strip when an external text editor is
+  configured (`editor/external/text_editor_exec_path`); order
+  Scene/dropdown/Game.
+- Sync: new `selected_main_screen_changed(name)` signal on
+  `EditorMainScreen`; node connects it to update the dropdown text on
+  shortcut/screen switches (Ctrl+F1 etc); dropdown selection calls
+  `editor_main_screen->select(name)`.
+- Defaults: 2D is the startup screen on fresh installs and the
+  dropdown's default text.
+- Toolbar: canvas-item toolbar trimmed to left-half tools + View to
+  leave top-right room for the transport strip (Step 18).
+- Visual proof: `Scene | 3D dropdown | Game` with no Script button
+  (`crete-step15b.png`); Ctrl+F1 switches to 2D + dropdown syncs
+  (`crete-step15d.png`); dropdown opens with 2D/3D items
+  (`crete-step15f.png`); clicking 2D switches views
+  (`crete-step15g.png`).
+- Results: build DONE; full suite **1387 passed, 0 failed, 3
+  skipped; 356,627 assertions. Status: SUCCESS.**

@@ -406,7 +406,7 @@ void EditorNode::shortcut_input(const Ref<InputEvent> &p_event) {
 		bool is_handled = true;
 		if (ED_IS_SHORTCUT("editor/filter_files", p_event)) {
 			FileSystemDock::get_singleton()->focus_on_filter();
-		} else if (ED_IS_SHORTCUT("editor/editor_2d", p_event)) {
+		} else if (ED_IS_SHORTCUT("editor/editor_scene", p_event)) {
 			editor_main_screen->select(EditorMainScreen::EDITOR_2D);
 		} else if (ED_IS_SHORTCUT("editor/editor_3d", p_event)) {
 			editor_main_screen->select(EditorMainScreen::EDITOR_3D);
@@ -1647,6 +1647,107 @@ void EditorNode::_update_undo_redo_allowed() {
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
 	crete_edit_menu->set_item_disabled(crete_edit_menu->get_item_index(SCENE_UNDO), !undo_redo->has_undo());
 	crete_edit_menu->set_item_disabled(crete_edit_menu->get_item_index(SCENE_REDO), !undo_redo->has_redo());
+}
+
+void EditorNode::_crete_scene_dim_selected(int p_index) {
+	int screen = scene_dim_option->get_item_id(p_index);
+	if (!editor_main_screen->is_button_enabled(screen)) {
+		_crete_sync_scene_dim();
+		return;
+	}
+	editor_main_screen->select(screen);
+}
+
+void EditorNode::_crete_main_screen_changed(const String &p_name) {
+	(void)p_name;
+	_crete_sync_scene_dim();
+}
+
+void EditorNode::_crete_sync_scene_dim() {
+	if (scene_dim_option == nullptr) {
+		return;
+	}
+	EditorPlugin *selected = editor_main_screen->get_selected_plugin();
+	int want = (selected != nullptr && selected->get_plugin_name() == "3D") ? 1 : 0;
+	scene_dim_option->set_block_signals(true);
+	scene_dim_option->select(want);
+	scene_dim_option->set_block_signals(false);
+}
+
+void EditorNode::_update_crete_script_button() {
+	_update_crete_script_button_for_profile(true);
+}
+
+void EditorNode::_update_crete_script_button_for_profile(bool p_profile_allowed) {
+	// The Script screen only gets a strip button when C# files open inside
+	// the editor: no external editor configured, or the configured one is
+	// not installed. Fresh profiles default to hidden (VS Code default).
+	bool show = p_profile_allowed;
+	if (show) {
+		EditorSettings *editor_settings = EditorSettings::get_singleton();
+		if (editor_settings->has_setting("dotnet/editor/external_editor")) {
+			show = !_crete_external_editor_available(int(editor_settings->get_setting("dotnet/editor/external_editor")));
+		} else {
+			show = false;
+		}
+	}
+	editor_main_screen->set_button_enabled(EditorMainScreen::EDITOR_SCRIPT, show);
+}
+
+bool EditorNode::_crete_external_editor_available(int p_editor_id) {
+	// Mirrors GodotTools' ExternalEditorId (None 0, VS 1, VS4Mac 2,
+	// MonoDevelop 3, VsCode 4, Rider 5, Custom 6, Fleet 7).
+	switch (p_editor_id) {
+		case 0:
+			return false;
+		case 1:
+			return !_crete_find_on_path("devenv").is_empty();
+		case 4:
+			return !_crete_find_on_path("code").is_empty();
+		case 5:
+			return !_crete_find_on_path("rider").is_empty();
+		case 7:
+			return !_crete_find_on_path("fleet").is_empty();
+		case 6: {
+			String custom;
+			if (EditorSettings::get_singleton()->has_setting("dotnet/editor/custom_exec_path")) {
+				custom = String(EditorSettings::get_singleton()->get_setting("dotnet/editor/custom_exec_path"));
+			}
+			if (custom.is_empty()) {
+				return false;
+			}
+			if (custom.is_absolute_path()) {
+				return FileAccess::exists(custom);
+			}
+			return !_crete_find_on_path(custom).is_empty();
+		} break;
+		default:
+			return false;
+	}
+}
+
+String EditorNode::_crete_find_on_path(const String &p_name) {
+	const String path_env = OS::get_singleton()->get_environment("PATH");
+#ifdef WINDOWS_ENABLED
+	const String path_sep = ";";
+	Vector<String> exts = OS::get_singleton()->get_environment("PATHEXT").split(";", false);
+	if (exts.is_empty()) {
+		exts.push_back(".EXE");
+	}
+#else
+	const String path_sep = ":";
+	Vector<String> exts;
+	exts.push_back("");
+#endif
+	for (const String &dir : path_env.split(path_sep, false)) {
+		for (const String &ext : exts) {
+			const String candidate = dir.strip_edges() + "/" + p_name + ext.to_lower();
+			if (FileAccess::exists(candidate)) {
+				return candidate;
+			}
+		}
+	}
+	return String();
 }
 
 void EditorNode::_node_renamed() {
@@ -7747,7 +7848,7 @@ void EditorNode::_feature_profile_changed() {
 		editor_dock_manager->set_dock_enabled(history_dock, !profile->is_feature_disabled(EditorFeatureProfile::FEATURE_HISTORY_DOCK));
 
 		editor_main_screen->set_button_enabled(EditorMainScreen::EDITOR_3D, !profile->is_feature_disabled(EditorFeatureProfile::FEATURE_3D));
-		editor_main_screen->set_button_enabled(EditorMainScreen::EDITOR_SCRIPT, !profile->is_feature_disabled(EditorFeatureProfile::FEATURE_SCRIPT));
+		_update_crete_script_button_for_profile(!profile->is_feature_disabled(EditorFeatureProfile::FEATURE_SCRIPT));
 		if (!Engine::get_singleton()->is_recovery_mode_hint()) {
 			editor_main_screen->set_button_enabled(EditorMainScreen::EDITOR_GAME, !profile->is_feature_disabled(EditorFeatureProfile::FEATURE_GAME));
 		}
@@ -7757,7 +7858,7 @@ void EditorNode::_feature_profile_changed() {
 		editor_dock_manager->set_dock_enabled(FileSystemDock::get_singleton(), true);
 		editor_dock_manager->set_dock_enabled(history_dock, true);
 		editor_main_screen->set_button_enabled(EditorMainScreen::EDITOR_3D, true);
-		editor_main_screen->set_button_enabled(EditorMainScreen::EDITOR_SCRIPT, true);
+		_update_crete_script_button_for_profile(true);
 		if (!Engine::get_singleton()->is_recovery_mode_hint()) {
 			editor_main_screen->set_button_enabled(EditorMainScreen::EDITOR_GAME, true);
 		}
@@ -8836,12 +8937,12 @@ EditorNode::EditorNode() {
 	ED_SHORTCUT_AND_COMMAND("editor/support_development", TTRC("Support Godot Development"));
 
 	// Use the Ctrl modifier so F2 can be used to rename nodes in the scene tree dock.
-	ED_SHORTCUT_AND_COMMAND("editor/editor_2d", TTRC("Open 2D Workspace"), KeyModifierMask::CTRL | Key::F1);
+	ED_SHORTCUT_AND_COMMAND("editor/editor_scene", TTRC("Open Scene Workspace"), KeyModifierMask::CTRL | Key::F1);
 	ED_SHORTCUT_AND_COMMAND("editor/editor_3d", TTRC("Open 3D Workspace"), KeyModifierMask::CTRL | Key::F2);
 	ED_SHORTCUT_AND_COMMAND("editor/editor_script", TTRC("Open Script Editor"), KeyModifierMask::CTRL | Key::F3);
 	ED_SHORTCUT_AND_COMMAND("editor/editor_game", TTRC("Open Game View"), KeyModifierMask::CTRL | Key::F4);
 
-	ED_SHORTCUT_OVERRIDE("editor/editor_2d", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_1);
+	ED_SHORTCUT_OVERRIDE("editor/editor_scene", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_1);
 	ED_SHORTCUT_OVERRIDE("editor/editor_3d", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_2);
 	ED_SHORTCUT_OVERRIDE("editor/editor_script", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_3);
 	ED_SHORTCUT_OVERRIDE("editor/editor_game", "macos", KeyModifierMask::META | KeyModifierMask::CTRL | Key::KEY_4);
@@ -9197,6 +9298,22 @@ EditorNode::EditorNode() {
 	if (!Engine::get_singleton()->is_recovery_mode_hint()) {
 		add_editor_plugin(get_game_view_plugin());
 	}
+
+	// Crete: the main strip shows Scene | Game (+ Publish from C# later).
+	// The 3D button is detached from the strip; the dropdown switches 2D/3D.
+	editor_main_screen->detach_strip_button(EditorMainScreen::EDITOR_3D);
+
+	scene_dim_option = memnew(OptionButton);
+	scene_dim_option->set_accessibility_name(TTRC("Scene Dimension:"));
+	scene_dim_option->add_item(TTRC("2D"), EditorMainScreen::EDITOR_2D);
+	scene_dim_option->add_item(TTRC("3D"), EditorMainScreen::EDITOR_3D);
+	scene_dim_option->connect(SceneStringName(item_selected), callable_mp(this, &EditorNode::_crete_scene_dim_selected));
+	editor_main_screen->connect("selected_main_screen_changed", callable_mp(this, &EditorNode::_crete_main_screen_changed));
+	main_editor_button_hb->add_child(scene_dim_option);
+	main_editor_button_hb->move_child(scene_dim_option, 1);
+
+	_update_crete_script_button();
+	EditorSettings::get_singleton()->connect("settings_changed", callable_mp(this, &EditorNode::_update_crete_script_button));
 
 	EditorAudioBuses *audio_bus_editor = EditorAudioBuses::register_editor();
 

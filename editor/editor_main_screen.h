@@ -62,6 +62,7 @@ private:
 
 protected:
 	void _notification(int p_what);
+	static void _bind_methods();
 
 public:
 	void set_button_container(HBoxContainer *p_button_hb);
@@ -71,6 +72,7 @@ public:
 
 	void set_button_enabled(int p_index, bool p_enabled);
 	bool is_button_enabled(int p_index) const;
+	void detach_strip_button(int p_index);
 
 	void select_next();
 	void select_prev();

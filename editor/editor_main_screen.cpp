@@ -43,9 +43,9 @@ void EditorMainScreen::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_READY: {
 			set_accessibility_region(true);
-			if (EDITOR_3D < buttons.size() && buttons[EDITOR_3D]->is_visible()) {
-				// If the 3D editor is enabled, use this as the default.
-				select(EDITOR_3D);
+			if (EDITOR_2D < buttons.size() && buttons[EDITOR_2D]->is_visible()) {
+				// Crete: the Scene screen opens on 2D by default.
+				select(EDITOR_2D);
 				return;
 			}
 
@@ -66,11 +66,13 @@ void EditorMainScreen::_notification(int p_what) {
 				Button *tb = buttons[i];
 				EditorPlugin *p_editor = editor_table[i];
 				Ref<Texture2D> icon = p_editor->get_plugin_icon();
+				// Crete: the renamed Scene screen keeps the 2D theme icon.
+				String icon_name = p_editor->get_plugin_name() == "Scene" ? String("2D") : p_editor->get_plugin_name();
 
 				if (icon.is_valid()) {
 					tb->set_button_icon(icon);
-				} else if (has_theme_icon(p_editor->get_plugin_name(), EditorStringName(EditorIcons))) {
-					tb->set_button_icon(get_theme_icon(p_editor->get_plugin_name(), EditorStringName(EditorIcons)));
+				} else if (has_theme_icon(icon_name, EditorStringName(EditorIcons))) {
+					tb->set_button_icon(get_theme_icon(icon_name, EditorStringName(EditorIcons)));
 				}
 			}
 		} break;
@@ -158,7 +160,8 @@ void EditorMainScreen::select_by_name(const String &p_name) {
 	ERR_FAIL_COND(p_name.is_empty());
 
 	for (int i = 0; i < buttons.size(); i++) {
-		if (buttons[i]->get_text() == p_name) {
+		// Crete: "2D" is a legacy alias for the renamed Scene screen.
+		if (buttons[i]->get_text() == p_name || (p_name == "2D" && buttons[i]->get_text() == "Scene")) {
 			select(i);
 			return;
 		}
@@ -203,8 +206,21 @@ void EditorMainScreen::select(int p_index) {
 	for (int i = 0; i < plugin_count; i++) {
 		editor_data.get_editor_plugin(i)->notify_main_screen_changed(selected_plugin->get_plugin_name());
 	}
+	emit_signal(SNAME("selected_main_screen_changed"), selected_plugin->get_plugin_name());
 
 	EditorNode::get_singleton()->update_distraction_free_mode();
+}
+
+void EditorMainScreen::_bind_methods() {
+	ADD_SIGNAL(MethodInfo("selected_main_screen_changed", PropertyInfo(Variant::STRING, "screen_name")));
+}
+
+void EditorMainScreen::detach_strip_button(int p_index) {
+	// Crete: removes the button from the visible strip but keeps it in the
+	// table, so select()/select_by_name() and shortcuts keep working while
+	// the strip shows something else (the 2D/3D dropdown) instead.
+	ERR_FAIL_INDEX(p_index, buttons.size());
+	button_hb->remove_child(buttons[p_index]);
 }
 
 int EditorMainScreen::get_selected_index() const {
@@ -240,16 +256,13 @@ bool EditorMainScreen::can_auto_switch_screens() const {
 	if (selected_plugin == nullptr) {
 		return true;
 	}
-	// Only allow auto-switching if the selected button is to the left of the Script button.
-	for (int i = 0; i < button_hb->get_child_count(); i++) {
-		Button *button = Object::cast_to<Button>(button_hb->get_child(i));
-		if (button->get_text() == "Script") {
-			// Selected button is at or after the Script button.
-			return false;
-		}
-		if (button->get_text() == selected_plugin->get_plugin_name()) {
-			// Selected button is before the Script button.
-			return true;
+	// Only allow auto-switching if the selected screen is to the left of the Script screen.
+	// Crete: compares plugin order, not strip children, so non-button strip
+	// controls (the 2D/3D dropdown) and detached buttons can't skew it.
+	int selected = get_plugin_index(selected_plugin);
+	for (int i = 0; i < editor_table.size(); i++) {
+		if (editor_table[i]->get_plugin_name() == "Script") {
+			return selected >= 0 && selected < i;
 		}
 	}
 	return false;
@@ -272,8 +285,10 @@ void EditorMainScreen::add_main_plugin(EditorPlugin *p_editor) {
 	}
 
 	Ref<Texture2D> icon = p_editor->get_plugin_icon();
-	if (icon.is_null() && has_theme_icon(p_editor->get_plugin_name(), EditorStringName(EditorIcons))) {
-		icon = get_editor_theme_icon(p_editor->get_plugin_name());
+	// Crete: the renamed Scene screen keeps the 2D theme icon.
+	String icon_name = p_editor->get_plugin_name() == "Scene" ? String("2D") : p_editor->get_plugin_name();
+	if (icon.is_null() && has_theme_icon(icon_name, EditorStringName(EditorIcons))) {
+		icon = get_editor_theme_icon(icon_name);
 	}
 	if (icon.is_valid()) {
 		tb->set_button_icon(icon);

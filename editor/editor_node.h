@@ -283,6 +283,7 @@ private:
 	Control *gui_base = nullptr;
 	VBoxContainer *main_vbox = nullptr;
 	OptionButton *renderer = nullptr;
+	OptionButton *scene_dim_option = nullptr;
 
 	ConfirmationDialog *video_restart_dialog = nullptr;
 
@@ -555,6 +556,13 @@ private:
 	void _viewport_resized();
 
 	void _update_undo_redo_allowed();
+	void _crete_scene_dim_selected(int p_index);
+	void _crete_main_screen_changed(const String &p_name);
+	void _crete_sync_scene_dim();
+	void _update_crete_script_button();
+	void _update_crete_script_button_for_profile(bool p_profile_allowed);
+	bool _crete_external_editor_available(int p_editor_id);
+	String _crete_find_on_path(const String &p_name);
 
 	int _save_external_resources(bool p_also_save_external_data = false);
 	void _save_scene_silently();

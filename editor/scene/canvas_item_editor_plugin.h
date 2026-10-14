@@ -642,7 +642,7 @@ protected:
 	void _notification(int p_what);
 
 public:
-	virtual String get_plugin_name() const override { return TTRC("2D"); }
+	virtual String get_plugin_name() const override { return TTRC("Scene"); }
 	bool has_main_screen() const override { return true; }
 	virtual void edit(Object *p_object) override;
 	virtual bool handles(Object *p_object) const override;
