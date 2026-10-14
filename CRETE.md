@@ -681,3 +681,16 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
 - Results: full suite **1387 passed, 0 failed, 3 skipped,
   356,627 assertions. Status: SUCCESS.** E2E 9/9 markers
   green incl. `uniq`. prek 0.5.5 fully green.
+
+## No-project dialog (DONE)
+
+- Double-clicking the GUI editor with no project exited
+  silently; now Windows shows a native `OS::alert` dialog
+  ("No project found...") when `GetConsoleWindow()` is null
+  (declared manually to avoid windows.h in main.cpp). The
+  gate also keeps CI/automation fast-failing: console
+  sessions see the printed error with no modal. Exit code is
+  now `ERR_FILE_NOT_FOUND` instead of 0.
+- Results: dialog screenshot-verified on detached launch;
+  console path prints + exits 1 with no popup; full suite
+  **1387 passed, 0 failed, 3 skipped. Status: SUCCESS.**

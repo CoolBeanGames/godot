@@ -30,6 +30,12 @@
 
 #include "main.h"
 
+#ifdef WINDOWS_ENABLED
+// kernel32 import declared manually: detects console-less (double-clicked)
+// launches without dragging windows.h macro pollution into main.
+extern "C" __declspec(dllimport) void *__stdcall GetConsoleWindow();
+#endif
+
 #include "core/config/engine.h"
 #include "core/config/project_settings.h"
 #include "core/core_globals.h"
@@ -2150,6 +2156,13 @@ Error Main::setup(const char *execpath, int argc, char *argv[], bool p_second_ph
 	if (!editor && !found_project && !cmdline_tool) {
 		// Crete: the built-in project manager is removed. Projects open from Crete Hub.
 		OS::get_singleton()->print("Error: No project found. Open a project from Crete Hub or pass --path <project_dir>.\n");
+#ifdef WINDOWS_ENABLED
+		if (GetConsoleWindow() == nullptr) {
+			// GUI double-click: no console to read the message, so say it in a dialog.
+			OS::get_singleton()->alert("No project found.\n\nOpen a project from Crete Hub, or launch with --path <project_dir>.", "Crete");
+		}
+#endif
+		exit_err = ERR_FILE_NOT_FOUND;
 		goto error;
 	}
 
