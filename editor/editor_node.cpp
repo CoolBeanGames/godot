@@ -161,6 +161,7 @@
 #include "scene/gui/panel.h"
 #include "scene/gui/popup.h"
 #include "scene/gui/rich_text_label.h"
+#include "scene/gui/separator.h"
 #include "scene/gui/split_container.h"
 #include "scene/gui/tab_container.h"
 #include "scene/main/scene_tree.h"
@@ -1007,6 +1008,7 @@ void EditorNode::_notification(int p_what) {
 					}
 				}
 			}
+			_crete_status_tick();
 
 			RenderingServer::get_singleton()->viewport_set_disable_2d(get_scene_root()->get_viewport_rid(), true);
 			RenderingServer::get_singleton()->viewport_set_environment_mode(get_viewport()->get_viewport_rid(), RSE::VIEWPORT_ENVIRONMENT_DISABLED);
@@ -1771,6 +1773,125 @@ void EditorNode::_node_renamed() {
 	if (InspectorDock::get_inspector_singleton()) {
 		InspectorDock::get_inspector_singleton()->update_tree();
 	}
+}
+
+void EditorNode::_crete_status_tick() {
+	if (crete_status_hb == nullptr || log == nullptr) {
+		return;
+	}
+	crete_status_tick_count++;
+	int errors = log->crete_get_message_count(EditorLog::MSG_TYPE_ERROR);
+	int warnings = log->crete_get_message_count(EditorLog::MSG_TYPE_WARNING);
+	crete_status_errors->set_text(vformat(TTR("Errors: %d"), errors));
+	crete_status_errors->add_theme_color_override("font_color", errors > 0 ? Color(1.0, 0.45, 0.45) : Color(0.55, 0.55, 0.55));
+	crete_status_warnings->set_text(vformat(TTR("Warnings: %d"), warnings));
+	crete_status_warnings->add_theme_color_override("font_color", warnings > 0 ? Color(1.0, 0.75, 0.35) : Color(0.55, 0.55, 0.55));
+	String last = log->crete_get_last_message().get_slice("\n", 0).strip_edges().left(120);
+	crete_status_output->set_text(last.is_empty() ? TTR("Output: ready") : TTR("Output: ") + last);
+	String method = OS::get_singleton()->get_current_rendering_method().to_lower();
+	if (method == "forward_plus") {
+		method = "Forward+";
+	} else if (method == "mobile") {
+		method = "Mobile";
+	} else if (method == "gl_compatibility") {
+		method = "Compatibility";
+	}
+	crete_status_renderer->set_text(method);
+	if (get_viewport() != nullptr) {
+		Vector2 vp = get_viewport()->get_visible_rect().size;
+		crete_status_viewport->set_text(vformat("%d×%d", int(vp.x), int(vp.y)));
+	}
+	if (crete_status_tick_count % 10 == 1) {
+		crete_status_git->set_text(_crete_git_status());
+	}
+	// Transport cluster.
+	CanvasItemEditor *canvas = CanvasItemEditor::get_singleton();
+	if (canvas != nullptr) {
+		float step = canvas->get_grid_step().x;
+		crete_snap_label->set_text(step == Math::floor(step) ? vformat(TTR("Snap: %dpx"), int(step)) : vformat(TTR("Snap: %.1fpx"), step));
+	}
+	bool any_item = false;
+	bool any_unlocked = false;
+	for (Node *n : editor_selection->get_top_selected_node_list()) {
+		CanvasItem *ci = Object::cast_to<CanvasItem>(n);
+		if (ci != nullptr && ci->is_inside_tree()) {
+			any_item = true;
+			if (!ci->has_meta("_edit_lock_")) {
+				any_unlocked = true;
+			}
+		}
+	}
+	crete_lock_button->set_disabled(!any_item);
+	if (any_item && !any_unlocked) {
+		crete_lock_button->set_button_icon(crete_unlock_icon);
+		crete_lock_button->set_tooltip_text(TTRC("Unlock selected nodes."));
+	} else {
+		crete_lock_button->set_button_icon(crete_lock_icon);
+		crete_lock_button->set_tooltip_text(TTRC("Lock selected nodes."));
+	}
+}
+
+void EditorNode::_crete_lock_pressed() {
+	bool any_unlocked = false;
+	for (Node *n : editor_selection->get_top_selected_node_list()) {
+		CanvasItem *ci = Object::cast_to<CanvasItem>(n);
+		if (ci != nullptr && ci->is_inside_tree() && !ci->has_meta("_edit_lock_")) {
+			any_unlocked = true;
+			break;
+		}
+	}
+	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
+	undo_redo->create_action(any_unlocked ? TTR("Lock Selected") : TTR("Unlock Selected"));
+	for (Node *n : editor_selection->get_top_selected_node_list()) {
+		CanvasItem *ci = Object::cast_to<CanvasItem>(n);
+		if (ci == nullptr || !ci->is_inside_tree()) {
+			continue;
+		}
+		if (any_unlocked) {
+			undo_redo->add_do_method(ci, "set_meta", "_edit_lock_", true);
+			undo_redo->add_undo_method(ci, "remove_meta", "_edit_lock_");
+		} else {
+			undo_redo->add_do_method(ci, "remove_meta", "_edit_lock_");
+			undo_redo->add_undo_method(ci, "set_meta", "_edit_lock_", true);
+		}
+	}
+	CanvasItemEditor *canvas = CanvasItemEditor::get_singleton();
+	if (canvas != nullptr) {
+		undo_redo->add_do_method(canvas, "emit_signal", "item_lock_status_changed");
+		undo_redo->add_undo_method(canvas, "emit_signal", "item_lock_status_changed");
+	}
+	undo_redo->commit_action();
+	gui_base->queue_redraw();
+	_crete_status_tick();
+}
+
+String EditorNode::_crete_git_status() {
+	String proj = ProjectSettings::get_singleton()->globalize_path("res://");
+	List<String> args;
+	args.push_back("-C");
+	args.push_back(proj);
+	args.push_back("status");
+	args.push_back("--porcelain=v1");
+	args.push_back("--branch");
+	String output;
+	int exit = 0;
+	if (OS::get_singleton()->execute("git", args, &output, &exit, true) != OK || exit != 0) {
+		return TTR("no repo");
+	}
+	PackedStringArray lines = output.split("\n", false);
+	if (lines.is_empty()) {
+		return TTR("no repo");
+	}
+	String head = lines[0].strip_edges();
+	String branch = head.trim_prefix("## ").get_slice(".", 0).get_slice(" ", 0);
+	if (branch.is_empty()) {
+		branch = head.trim_prefix("## ");
+	}
+	int changes = lines.size() - 1;
+	if (changes <= 0 && !head.contains_char('[')) {
+		return vformat(TTR("%s · clean"), branch);
+	}
+	return vformat(TTR("%s · %d"), branch, changes);
 }
 
 void EditorNode::_open_command_palette() {
@@ -6409,6 +6530,23 @@ void EditorNode::_load_editor_layout() {
 		ep.step(TTR("Editor layout ready."), 5, true);
 	}
 	load_editor_layout_done = true;
+	// Crete: one-line Console banner identifying the build.
+	{
+		String method = OS::get_singleton()->get_current_rendering_method().to_lower();
+		if (method == "forward_plus") {
+			method = "Forward+";
+		} else if (method == "mobile") {
+			method = "Mobile";
+		} else if (method == "gl_compatibility") {
+			method = "Compatibility";
+		}
+		static const char *ext_names[] = { "none", "Visual Studio", "VS4Mac", "MonoDevelop", "VS Code", "Rider", "Custom", "Fleet" };
+		int ext_id = int(EDITOR_GET("dotnet/editor/external_editor"));
+		String ext = (ext_id >= 0 && ext_id < 8) ? ext_names[ext_id] : vformat("id %d", ext_id);
+		log->add_message(vformat("Crete editor (Godot %d.%d.%d base) — %s · External editor: %s",
+				GODOT_VERSION_MAJOR, GODOT_VERSION_MINOR, GODOT_VERSION_PATCH, method, ext),
+				EditorLog::MSG_TYPE_EDITOR);
+	}
 	for (const String &arg : OS::get_singleton()->get_cmdline_user_args()) {
 		if (arg == "--crete-e2e-docks") {
 			callable_mp(this, &EditorNode::_crete_e2e_docks_open).call_deferred();
@@ -6449,6 +6587,7 @@ void EditorNode::_crete_e2e_docks_step2() {
 	bool own_row = filter && add && filter->get_parent() != add->get_parent();
 	bool add_last = add && add->get_index() == add->get_parent()->get_child_count() - 1;
 	print_line("CreteDocks: filter=[" + (filter ? filter->get_placeholder() : "?") + "] rows=" + (own_row ? "2" : "1") + " add_last=" + (add_last ? "yes" : "no"));
+	print_line(String("CreteDocks: banner=") + (log->crete_has_message("Crete editor (Godot") ? "yes" : "NO"));
 	bool hscroll = SceneTreeDock::get_singleton()->get_tree_editor()->get_scene_tree()->is_h_scroll_enabled();
 	print_line(String("CreteDocks: hscroll=") + (hscroll ? "on" : "off"));
 	bool thumbs = FileSystemDock::get_singleton()->get_file_list_display_mode() == FileSystemDock::FILE_LIST_DISPLAY_THUMBNAILS;
@@ -6510,6 +6649,18 @@ void EditorNode::_crete_e2e_docks_step3() {
 
 void EditorNode::_crete_e2e_docks_step4() {
 	print_line("CreteDocks: signals2=[" + SignalsDock::get_singleton()->get_display_title() + "]");
+	_crete_status_tick();
+	print_line("CreteDocks: transport=[" + scene_dim_option->get_item_text(scene_dim_option->get_selected()) + "|" +
+			crete_snap_label->get_text() + "|lock_" + (crete_lock_button->is_disabled() ? "off" : "on") + "]");
+	print_line("CreteDocks: status=[" + crete_status_errors->get_text() + "|" + crete_status_warnings->get_text() + "|" +
+			crete_status_output->get_text().left(60) + "|" + crete_status_renderer->get_text() + "|" +
+			crete_status_viewport->get_text() + "|" + crete_status_git->get_text() + "]");
+	Node *lock_target = get_edited_scene()->find_child("PlayButton", true, false);
+	bool was_locked = lock_target->has_meta("_edit_lock_");
+	_crete_lock_pressed();
+	bool now_locked = lock_target->has_meta("_edit_lock_");
+	print_line(String("CreteDocks: lock_action=") + (!was_locked && now_locked ? "locked" : (was_locked && !now_locked ? "unlocked" : "BROKEN")));
+	_crete_lock_pressed(); // Restore unlocked state.
 	print_line("CreteDocks: e2e DONE");
 }
 
@@ -9187,6 +9338,13 @@ EditorNode::EditorNode() {
 	right_spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	title_bar->add_child(right_spacer);
 
+	// Crete: transport cluster (renderer dropdown + snap + lock) sits
+	// between the centered strip and the run bar. Populated below.
+	crete_transport_hb = memnew(HBoxContainer);
+	crete_transport_hb->set_name("CreteTransport");
+	crete_transport_hb->set_mouse_filter(Control::MOUSE_FILTER_STOP);
+	title_bar->add_child(crete_transport_hb);
+
 	project_run_bar = memnew(EditorRunBar);
 	project_run_bar->set_mouse_filter(Control::MOUSE_FILTER_STOP);
 	title_bar->add_child(project_run_bar);
@@ -9344,8 +9502,51 @@ EditorNode::EditorNode() {
 
 	bottom_panel = memnew(EditorBottomPanel);
 	editor_dock_manager->register_dock_slot(bottom_panel);
-	center_split->add_child(bottom_panel);
+	// Crete: status bar above the bottom panel (viewport bottom edge).
+	VBoxContainer *crete_bottom_vb = memnew(VBoxContainer);
+	crete_bottom_vb->set_name("CreteBottomVB");
+	crete_bottom_vb->add_theme_constant_override("separation", 0);
+	center_split->add_child(crete_bottom_vb);
+	crete_status_hb = memnew(HBoxContainer);
+	crete_status_hb->set_name("CreteStatusBar");
+	crete_status_hb->set_mouse_filter(Control::MOUSE_FILTER_STOP);
+	crete_status_hb->add_theme_constant_override("separation", 8);
+	crete_bottom_vb->add_child(crete_status_hb);
+	crete_status_errors = memnew(Label);
+	crete_status_errors->set_name("CreteStatusErrors");
+	crete_status_hb->add_child(crete_status_errors);
+	crete_status_warnings = memnew(Label);
+	crete_status_warnings->set_name("CreteStatusWarnings");
+	crete_status_hb->add_child(crete_status_warnings);
+	VSeparator *crete_status_sep1 = memnew(VSeparator);
+	crete_status_hb->add_child(crete_status_sep1);
+	crete_status_output = memnew(Label);
+	crete_status_output->set_name("CreteStatusOutput");
+	crete_status_output->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	crete_status_output->set_clip_text(true);
+	crete_status_output->set_text_overrun_behavior(TextServer::OVERRUN_TRIM_ELLIPSIS);
+	crete_status_hb->add_child(crete_status_output);
+	crete_status_renderer = memnew(Label);
+	crete_status_renderer->set_name("CreteStatusRenderer");
+	crete_status_hb->add_child(crete_status_renderer);
+	VSeparator *crete_status_sep2 = memnew(VSeparator);
+	crete_status_hb->add_child(crete_status_sep2);
+	crete_status_viewport = memnew(Label);
+	crete_status_viewport->set_name("CreteStatusViewport");
+	crete_status_hb->add_child(crete_status_viewport);
+	VSeparator *crete_status_sep3 = memnew(VSeparator);
+	crete_status_hb->add_child(crete_status_sep3);
+	crete_status_git = memnew(Label);
+	crete_status_git->set_name("CreteStatusGit");
+	crete_status_hb->add_child(crete_status_git);
+	crete_bottom_vb->add_child(bottom_panel);
 	center_split->set_dragger_visibility(SplitContainer::DRAGGER_HIDDEN);
+
+	crete_status_timer = memnew(Timer);
+	crete_status_timer->set_wait_time(1.0);
+	crete_status_timer->set_autostart(true);
+	crete_status_timer->connect(SNAME("timeout"), callable_mp(this, &EditorNode::_crete_status_tick));
+	crete_status_hb->add_child(crete_status_timer);
 
 	// Crete: Project first, Console second; the rest of the canonical
 	// bottom order comes from default_layout (see _load_editor_layout).
@@ -9462,17 +9663,33 @@ EditorNode::EditorNode() {
 	}
 
 	// Crete: the main strip shows Scene | Game (+ Publish from C# later).
-	// The 3D button is detached from the strip; the dropdown switches 2D/3D.
+	// The 3D button is detached from the strip; the transport dropdown
+	// (right of the strip) switches 2D/3D.
 	editor_main_screen->detach_strip_button(EditorMainScreen::EDITOR_3D);
 
 	scene_dim_option = memnew(OptionButton);
+	scene_dim_option->set_name("CreteSceneDim");
 	scene_dim_option->set_accessibility_name(TTRC("Scene Dimension:"));
 	scene_dim_option->add_item(TTRC("2D"), EditorMainScreen::EDITOR_2D);
 	scene_dim_option->add_item(TTRC("3D"), EditorMainScreen::EDITOR_3D);
 	scene_dim_option->connect(SceneStringName(item_selected), callable_mp(this, &EditorNode::_crete_scene_dim_selected));
 	editor_main_screen->connect("selected_main_screen_changed", callable_mp(this, &EditorNode::_crete_main_screen_changed));
-	main_editor_button_hb->add_child(scene_dim_option);
-	main_editor_button_hb->move_child(scene_dim_option, 1);
+	crete_transport_hb->add_child(scene_dim_option);
+
+	crete_snap_label = memnew(Label);
+	crete_snap_label->set_name("CreteSnapLabel");
+	crete_snap_label->set_tooltip_text(TTRC("2D grid snap step (Canvas Snap dialog)."));
+	crete_snap_label->set_vertical_alignment(VERTICAL_ALIGNMENT_CENTER);
+	crete_transport_hb->add_child(crete_snap_label);
+
+	crete_lock_icon = theme->get_icon(SNAME("Lock"), EditorStringName(EditorIcons));
+	crete_unlock_icon = theme->get_icon(SNAME("Unlock"), EditorStringName(EditorIcons));
+	crete_lock_button = memnew(Button);
+	crete_lock_button->set_name("CreteLockButton");
+	crete_lock_button->set_theme_type_variation("FlatMenuButton");
+	crete_lock_button->set_focus_mode(Control::FOCUS_NONE);
+	crete_lock_button->connect(SceneStringName(pressed), callable_mp(this, &EditorNode::_crete_lock_pressed));
+	crete_transport_hb->add_child(crete_lock_button);
 
 	_update_crete_script_button();
 	EditorSettings::get_singleton()->connect("settings_changed", callable_mp(this, &EditorNode::_update_crete_script_button));

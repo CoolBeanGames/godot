@@ -285,6 +285,22 @@ private:
 	OptionButton *renderer = nullptr;
 	OptionButton *scene_dim_option = nullptr;
 
+	// Crete: transport cluster + status bar (P3E).
+	HBoxContainer *crete_transport_hb = nullptr;
+	Label *crete_snap_label = nullptr;
+	Button *crete_lock_button = nullptr;
+	Ref<Texture2D> crete_lock_icon;
+	Ref<Texture2D> crete_unlock_icon;
+	HBoxContainer *crete_status_hb = nullptr;
+	Label *crete_status_errors = nullptr;
+	Label *crete_status_warnings = nullptr;
+	Label *crete_status_output = nullptr;
+	Label *crete_status_renderer = nullptr;
+	Label *crete_status_viewport = nullptr;
+	Label *crete_status_git = nullptr;
+	Timer *crete_status_timer = nullptr;
+	int crete_status_tick_count = 0;
+
 	ConfirmationDialog *video_restart_dialog = nullptr;
 
 	// Split containers.
@@ -563,6 +579,9 @@ private:
 	void _update_crete_script_button_for_profile(bool p_profile_allowed);
 	bool _crete_external_editor_available(int p_editor_id);
 	String _crete_find_on_path(const String &p_name);
+	void _crete_status_tick();
+	void _crete_lock_pressed();
+	String _crete_git_status();
 
 	int _save_external_resources(bool p_also_save_external_data = false);
 	void _save_scene_silently();

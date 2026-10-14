@@ -183,6 +183,11 @@ public:
 	void register_undo_redo(UndoRedo *p_undo_redo);
 	void deinit();
 
+	// Crete: status-bar reads.
+	int crete_get_message_count(MessageType p_type);
+	String crete_get_last_message();
+	bool crete_has_message(const String &p_substr);
+
 	void clear();
 
 	EditorLog();

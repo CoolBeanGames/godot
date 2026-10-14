@@ -556,3 +556,42 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   follow-up.
 - Results: build DONE; full suite **1387 passed, 0 failed, 3
   skipped; 356,627 assertions. Status: SUCCESS.**
+
+## Step 18 (P3E): transport row + status bar (DONE)
+
+- Transport cluster (new `CreteTransport` HBox between the
+  centered strip and the run bar): the 2D/3D dropdown moved out
+  of the strip (strip is now `Scene | Game | Publish`), a `Snap:
+  8px` label polling `CanvasItemEditor::get_grid_step()`, and a
+  Lock/Unlock button mirroring selection state that locks/
+  unlocks selected CanvasItems via undo_redo (`_edit_lock_`
+  metas + `item_lock_status_changed`), same semantics as the
+  canvas toolbar buttons. 1 s tick, null-guarded.
+- Status bar (viewport bottom edge: the bottom panel now lives
+  in `CreteBottomVB` under the bar): `Errors: N`
+  (red when > 0), `Warnings: N` (orange when > 0), `Output:
+  <last console line, ellipsized>` (expands), renderer pretty
+  name (`Forward+`), editor viewport size (`2560×1080`), git
+  (`<branch> · clean|N`, `no repo` outside repos; one
+  `git status --porcelain=v1 --branch` every 10th tick).
+  Hides with the bottom region when fully collapsed (it is
+  bottom chrome). `EditorLog` gained `crete_get_message_count`/
+  `crete_get_last_message`/`crete_has_message` reads.
+- GitHub dock tab shows the change count (`GitHub (3)`) via
+  dynamic `Title` (node `Name` untouched, so layout keys stay
+  stable); resets on empty states.
+- Console banner on every startup: `Crete editor (Godot 4.7.3
+  base) — Forward+ · External editor: VS Code` (version from
+  `core/version.h`, editor id mapped from the Step 15 table).
+- Correction: Step 15's "canvas toolbar trim" never happened
+  (commit `27d993a3ac` only renamed the plugin) — the 2D
+  toolbar is intact with all snap controls; no UX was removed.
+- E2E (`--crete-e2e-docks` step 4): `transport=[2D|Snap:
+  8px|lock_on]`, `status=[Errors: 0|Warnings: 0|Output:
+  …|Forward+|1024×600|no repo]`, `banner=yes`,
+  `lock_action=locked` (press path toggles the meta, then
+  restores), exit 0.
+- GUI pixel shots deferred (owner active); state fully proven
+  headless.
+- Results: build DONE; full suite **1387 passed, 0 failed, 3
+  skipped; 356,627 assertions. Status: SUCCESS.**

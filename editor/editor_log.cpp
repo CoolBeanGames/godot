@@ -261,6 +261,29 @@ void EditorLog::clear() {
 	_clear_request();
 }
 
+int EditorLog::crete_get_message_count(MessageType p_type) {
+	if (!type_filter_map.has(p_type)) {
+		return 0;
+	}
+	return type_filter_map[p_type]->get_message_count();
+}
+
+String EditorLog::crete_get_last_message() {
+	if (messages.is_empty()) {
+		return String();
+	}
+	return messages[messages.size() - 1].text;
+}
+
+bool EditorLog::crete_has_message(const String &p_substr) {
+	for (const LogMessage &m : messages) {
+		if (m.text.contains(p_substr)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void EditorLog::_process_message(const String &p_msg, MessageType p_type, bool p_clear) {
 	if (messages.size() > 0 && messages[messages.size() - 1].text == p_msg && messages[messages.size() - 1].type == p_type) {
 		// If previous message is the same as the new one, increase previous count rather than adding another

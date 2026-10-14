@@ -233,6 +233,7 @@ namespace GodotTools.GitHub
 
                 string state = status.Files.Count == 0 ? "clean" : $"{status.Files.Count} changed";
                 _statusLabel.Text = $"{status.Branch}  +{status.Ahead} -{status.Behind}  ({state})";
+                SetTitle(status.Files.Count == 0 ? "GitHub" : $"GitHub ({status.Files.Count})");
 
                 GD.Print($"CreteGitHub: git=yes repo=yes branch={status.Branch} " +
                     $"files={status.Files.Count} ahead={status.Ahead} behind={status.Behind}");
@@ -248,6 +249,7 @@ namespace GodotTools.GitHub
             _main.Hide();
             _emptyLabel.Text = message;
             _emptyLabel.Show();
+            SetTitle("GitHub");
         }
 
         private static string ShortCode(GitFileStatus f)
