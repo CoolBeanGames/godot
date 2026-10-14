@@ -410,3 +410,30 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   `.gitignore`, not the repo root).
 - Results: build DONE; full suite **1387 passed, 0 failed, 3
   skipped; 356,627 assertions. Status: SUCCESS.**
+
+## Step 14 (P3A): Crete theme preset + title + File/Edit menus (DONE)
+
+- Theme: new `Crete` color preset (accent #1e9df0, base ~#1e1e1f,
+  contrast 0.25) added to `EditorThemeManager` + preset enum, and
+  made the default for fresh installs. Existing users keep their
+  stored preset (verified: the test machine's persisted `Default`
+  won until flipped to `Crete`).
+- Title: editor window is now `<project> - Crete` (floating dock
+  windows and Game Workspace match). `GODOT_VERSION_NAME` untouched
+  (console/about keep upstream identity).
+- Menus: new File (New/Open/Recent/Save/Save As/Save All/Quit) and
+  Edit (Undo/Redo) menus ahead of Scene; Scene keeps inherited/
+  reopen/quick-open/export/reload/close items. Same action IDs and
+  handlers, so shortcuts and behavior are unchanged; disabled-state
+  updaters moved with their items. Order: File Edit Scene Project
+  Debug Editor Help, per mockup.
+- Verification is now visual: `C:/Users/callm/AppData/Local/Temp/crete-shot.ps1`
+  launches the GUI maximized, minimizes/restores other windows,
+  optionally clicks/keys, screenshots, kills. Dock bg samples
+  #1F1F20 (mockup --bg1 exactly); File menu contents + shortcuts
+  confirmed on a clicked-open shot. Known minor deviation: the
+  title/menu row derives #121212 (Godot darkens the menu row from
+  base; the mockup's #2b2b2d there would need per-control overrides
+  — coherent dark look accepted).
+- Results: build DONE; full suite **1387 passed, 0 failed, 3
+  skipped; 356,627 assertions. Status: SUCCESS.**

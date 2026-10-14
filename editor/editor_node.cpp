@@ -369,7 +369,7 @@ void EditorNode::_update_title() {
 		// Display the "modified" mark before anything else so that it can always be seen in the OS task bar.
 		title = vformat("(*) %s", title);
 	}
-	DisplayServer::get_singleton()->window_set_title(title + String(" - ") + GODOT_VERSION_NAME);
+	DisplayServer::get_singleton()->window_set_title(title + String(" - Crete"));
 	if (project_title) {
 		project_title->set_text(title);
 	}
@@ -1645,8 +1645,8 @@ void EditorNode::_titlebar_resized() {
 
 void EditorNode::_update_undo_redo_allowed() {
 	EditorUndoRedoManager *undo_redo = EditorUndoRedoManager::get_singleton();
-	file_menu->set_item_disabled(file_menu->get_item_index(SCENE_UNDO), !undo_redo->has_undo());
-	file_menu->set_item_disabled(file_menu->get_item_index(SCENE_REDO), !undo_redo->has_redo());
+	crete_edit_menu->set_item_disabled(crete_edit_menu->get_item_index(SCENE_UNDO), !undo_redo->has_undo());
+	crete_edit_menu->set_item_disabled(crete_edit_menu->get_item_index(SCENE_REDO), !undo_redo->has_redo());
 }
 
 void EditorNode::_node_renamed() {
@@ -4164,11 +4164,11 @@ void EditorNode::_update_file_menu_opened() {
 		}
 	}
 	if (has_unsaved) {
-		file_menu->set_item_disabled(file_menu->get_item_index(SCENE_SAVE_ALL_SCENES), false);
-		file_menu->set_item_tooltip(file_menu->get_item_index(SCENE_SAVE_ALL_SCENES), String());
+		crete_file_menu->set_item_disabled(crete_file_menu->get_item_index(SCENE_SAVE_ALL_SCENES), false);
+		crete_file_menu->set_item_tooltip(crete_file_menu->get_item_index(SCENE_SAVE_ALL_SCENES), String());
 	} else {
-		file_menu->set_item_disabled(file_menu->get_item_index(SCENE_SAVE_ALL_SCENES), true);
-		file_menu->set_item_tooltip(file_menu->get_item_index(SCENE_SAVE_ALL_SCENES), TTR("All scenes are already saved."));
+		crete_file_menu->set_item_disabled(crete_file_menu->get_item_index(SCENE_SAVE_ALL_SCENES), true);
+		crete_file_menu->set_item_tooltip(crete_file_menu->get_item_index(SCENE_SAVE_ALL_SCENES), TTR("All scenes are already saved."));
 	}
 	_update_undo_redo_allowed();
 }
@@ -7884,21 +7884,10 @@ void EditorNode::_build_file_menu() {
 	}
 	file_menu->clear(false);
 
-	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/new_scene"), SCENE_NEW_SCENE);
+	// Crete: New/Open/Save/Quit live in the File menu and Undo/Redo in the
+	// Edit menu now; Scene keeps the scene-management items.
 	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/new_inherited_scene"), SCENE_NEW_INHERITED_SCENE);
-	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/open_scene"), SCENE_OPEN_SCENE);
 	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/reopen_closed_scene"), SCENE_OPEN_PREV);
-	if (!recent_scenes) {
-		recent_scenes = memnew(PopupMenu);
-		recent_scenes->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
-		recent_scenes->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_open_recent_scene));
-	}
-	file_menu->add_submenu_node_item(TTRC("Open Recent"), recent_scenes, SCENE_OPEN_RECENT);
-	file_menu->add_separator();
-
-	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/save_scene"), SCENE_SAVE_SCENE);
-	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/save_scene_as"), SCENE_SAVE_AS_SCENE);
-	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/save_all_scenes"), SCENE_SAVE_ALL_SCENES);
 	file_menu->add_separator();
 
 	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/quick_open"), SCENE_QUICK_OPEN);
@@ -7914,23 +7903,50 @@ void EditorNode::_build_file_menu() {
 	file_menu->add_submenu_node_item(TTRC("Export As..."), export_as_menu, SCENE_EXPORT_AS);
 	file_menu->add_separator();
 
-	file_menu->add_shortcut(ED_GET_SHORTCUT("ui_undo"), SCENE_UNDO, false, true);
-	file_menu->add_shortcut(ED_GET_SHORTCUT("ui_redo"), SCENE_REDO, false, true);
-	file_menu->add_separator();
-
 	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/reload_saved_scene"), SCENE_RELOAD_SAVED_SCENE);
 	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/close_scene"), SCENE_CLOSE);
 	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/close_all_scenes"), SCENE_CLOSE_ALL);
+}
+
+void EditorNode::_build_crete_file_menu() {
+	if (!crete_file_menu) {
+		return;
+	}
+	crete_file_menu->clear(false);
+
+	crete_file_menu->add_shortcut(ED_GET_SHORTCUT("editor/new_scene"), SCENE_NEW_SCENE);
+	crete_file_menu->add_shortcut(ED_GET_SHORTCUT("editor/open_scene"), SCENE_OPEN_SCENE);
+	if (!recent_scenes) {
+		recent_scenes = memnew(PopupMenu);
+		recent_scenes->set_auto_translate_mode(AUTO_TRANSLATE_MODE_DISABLED);
+		recent_scenes->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_open_recent_scene));
+	}
+	crete_file_menu->add_submenu_node_item(TTRC("Open Recent"), recent_scenes, SCENE_OPEN_RECENT);
+	crete_file_menu->add_separator();
+
+	crete_file_menu->add_shortcut(ED_GET_SHORTCUT("editor/save_scene"), SCENE_SAVE_SCENE);
+	crete_file_menu->add_shortcut(ED_GET_SHORTCUT("editor/save_scene_as"), SCENE_SAVE_AS_SCENE);
+	crete_file_menu->add_shortcut(ED_GET_SHORTCUT("editor/save_all_scenes"), SCENE_SAVE_ALL_SCENES);
 #ifdef MACOS_ENABLED
 	if (menu_type != MENU_TYPE_GLOBAL) {
 		// On macOS "Quit" option is in the "app" menu.
-		file_menu->add_separator();
-		file_menu->add_shortcut(ED_GET_SHORTCUT("editor/file_quit"), SCENE_QUIT, true);
+		crete_file_menu->add_separator();
+		crete_file_menu->add_shortcut(ED_GET_SHORTCUT("editor/file_quit"), SCENE_QUIT, true);
 	}
 #else
-	file_menu->add_separator();
-	file_menu->add_shortcut(ED_GET_SHORTCUT("editor/file_quit"), SCENE_QUIT, true);
+	crete_file_menu->add_separator();
+	crete_file_menu->add_shortcut(ED_GET_SHORTCUT("editor/file_quit"), SCENE_QUIT, true);
 #endif
+}
+
+void EditorNode::_build_crete_edit_menu() {
+	if (!crete_edit_menu) {
+		return;
+	}
+	crete_edit_menu->clear(false);
+
+	crete_edit_menu->add_shortcut(ED_GET_SHORTCUT("ui_undo"), SCENE_UNDO, false, true);
+	crete_edit_menu->add_shortcut(ED_GET_SHORTCUT("ui_redo"), SCENE_REDO, false, true);
 }
 
 void EditorNode::_build_project_menu() {
@@ -8084,6 +8100,8 @@ void EditorNode::_update_main_menu_type() {
 
 	// Update menu items.
 	_build_file_menu();
+	_build_crete_file_menu();
+	_build_crete_edit_menu();
 	_build_project_menu();
 	_build_settings_menu();
 	_build_help_menu();
@@ -8853,9 +8871,17 @@ EditorNode::EditorNode() {
 		title_bar->add_child(left_menu_spacer);
 	}
 
+	crete_file_menu = memnew(PopupMenu);
+	crete_file_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
+	crete_file_menu->connect("about_to_popup", callable_mp(this, &EditorNode::_update_file_menu_opened));
+	_add_to_main_menu(TTRC("File"), crete_file_menu);
+
+	crete_edit_menu = memnew(PopupMenu);
+	crete_edit_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
+	_add_to_main_menu(TTRC("Edit"), crete_edit_menu);
+
 	file_menu = memnew(PopupMenu);
 	file_menu->connect(SceneStringName(id_pressed), callable_mp(this, &EditorNode::_menu_option));
-	file_menu->connect("about_to_popup", callable_mp(this, &EditorNode::_update_file_menu_opened));
 	_add_to_main_menu(TTRC("Scene"), file_menu);
 
 	project_menu = memnew(PopupMenu);

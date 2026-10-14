@@ -326,6 +326,8 @@ private:
 
 	PopupMenu *apple_menu = nullptr;
 	PopupMenu *file_menu = nullptr;
+	PopupMenu *crete_file_menu = nullptr;
+	PopupMenu *crete_edit_menu = nullptr;
 	PopupMenu *project_menu = nullptr;
 	PopupMenu *debug_menu = nullptr;
 	PopupMenu *settings_menu = nullptr;
@@ -690,6 +692,8 @@ private:
 	Vector<PopupMenu *> main_menu_items;
 
 	void _build_file_menu();
+	void _build_crete_file_menu();
+	void _build_crete_edit_menu();
 	void _build_project_menu();
 	void _build_settings_menu();
 	void _build_help_menu();

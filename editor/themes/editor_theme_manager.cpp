@@ -327,6 +327,10 @@ EditorThemeManager::ThemeConfiguration EditorThemeManager::_create_theme_config(
 			} else if (config.preset == "Breeze Dark") {
 				preset_accent_color = Color(0.239, 0.682, 0.914);
 				preset_base_color = Color(0.1255, 0.1373, 0.149);
+			} else if (config.preset == "Crete") {
+				preset_accent_color = Color(0.118, 0.616, 0.941); // #1e9df0, mockup accent.
+				preset_base_color = Color(0.12, 0.12, 0.125); // ~#1e1e1f, mockup background.
+				preset_contrast = 0.25;
 			} else if (config.preset == "Godot 2") {
 				preset_accent_color = Color(0.53, 0.67, 0.89);
 				preset_base_color = Color(0.24, 0.23, 0.27);
