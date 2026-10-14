@@ -1,0 +1,113 @@
+name: 🚀 Crete Release
+on:
+  push:
+    # Crete release tags: numeric version + "-stable" (the launcher only
+    # lists tags ending in "-stable" with a numeric prefix, e.g. 1.0.2-stable).
+    tags:
+      - "*-stable"
+  workflow_dispatch:
+
+# Builds the .NET editor (Windows + Linux) and export templates
+# (Windows + Linux + Web) and attaches them to the GitHub release.
+# Point the launcher at this repo via CRETE_REPO (or channels.json)
+# and the `crete` channel installs these builds.
+
+permissions:
+  contents: write
+
+concurrency:
+  group: crete-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    name: 🐧 Linux
+    uses: ./.github/workflows/linux_builds.yml
+    with:
+      changed-files: ""
+      templates: true
+    secrets: inherit
+
+  windows:
+    name: 🏁 Windows
+    uses: ./.github/workflows/windows_builds.yml
+    with:
+      changed-files: ""
+      templates: true
+    secrets: inherit
+
+  web:
+    name: 🌐 Web
+    uses: ./.github/workflows/web_builds.yml
+    with:
+      changed-files: ""
+    secrets: inherit
+
+  release:
+    name: 📦 Publish release
+    needs: [linux, windows, web]
+    # Manual dispatches are dry runs: build everything, publish nothing.
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Validate tag name
+        shell: bash
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^[0-9]+\.[0-9]+.*-stable$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not a Crete release tag (want N.M...-stable, e.g. 1.0.2-stable)."
+            exit 1
+          fi
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: "*-mono*"
+          path: dist
+
+      - name: Assemble release zips
+        shell: bash
+        run: |
+          ls dist/
+          # Editor zips (the launcher picks *win64*dotnet*.zip for the crete channel).
+          (cd dist/windows-editor-mono && zip -qr "../../crete-${GITHUB_REF_NAME}-win64-dotnet.zip" .)
+          (cd dist/linux-editor-mono && zip -qr "../../crete-${GITHUB_REF_NAME}-linux64-dotnet.zip" .)
+          # Template zips (debug + release binaries per platform).
+          mkdir -p tpl-win64 tpl-linux64 tpl-web
+          cp dist/windows-template-mono/* tpl-win64/
+          cp dist/windows-template-mono-debug/* tpl-win64/
+          cp dist/linux-template-mono/* tpl-linux64/
+          cp dist/linux-template-mono-debug/* tpl-linux64/
+          # SCons pre-zips web templates; ship both (release + debug) as-is.
+          cp dist/web-template-mono/*.zip tpl-web/
+          cp dist/web-template-mono-debug/*.zip tpl-web/
+          (cd tpl-win64 && zip -qr "../crete-${GITHUB_REF_NAME}-templates-win64-dotnet.zip" .)
+          (cd tpl-linux64 && zip -qr "../crete-${GITHUB_REF_NAME}-templates-linux64-dotnet.zip" .)
+          (cd tpl-web && zip -qr "../crete-${GITHUB_REF_NAME}-templates-web-dotnet.zip" .)
+          ls -l crete-*.zip
+
+      - name: Create release and upload assets
+        shell: bash
+        run: |
+          cat > /tmp/crete-notes.md <<'EOF'
+          ## Crete ${{ github.ref_name }}
+
+          .NET editor + export templates (Windows / Linux / Web).
+
+          - Windows .NET editor: `crete-${{ github.ref_name }}-win64-dotnet.zip`
+          - Linux .NET editor: `crete-${{ github.ref_name }}-linux64-dotnet.zip`
+          - Export templates: `crete-${{ github.ref_name }}-templates-<platform>-dotnet.zip`
+            (extract into the Godot export-templates directory)
+
+          The Crete launcher installs the Windows editor automatically when it
+          is pointed at this repo (`CRETE_REPO` env var or `channels.json`,
+          `crete` channel).
+
+          Steam: built against the full Steamworks SDK when the
+          `STEAMWORKS_SDK_URL` secret is configured, otherwise the Crete API
+          stub (uploads unaffected).
+          EOF
+          gh release create "$GITHUB_REF_NAME" --title "Crete $GITHUB_REF_NAME" --notes-file /tmp/crete-notes.md
+          gh release upload "$GITHUB_REF_NAME" crete-*.zip --clobber

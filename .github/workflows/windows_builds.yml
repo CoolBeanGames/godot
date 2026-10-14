@@ -1,60 +1,172 @@
 name: 🏁 Windows Builds
 on:
   workflow_call:
+    inputs:
+      changed-files:
+        description: A list of changed files, pre-filtered for parsing by clangd-tidy.
+        required: true
+        type: string
+      templates:
+        description: Also build export templates (release CI). PR CI builds the editor only.
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      STEAMWORKS_SDK_URL:
+        description: Private URL of the Steamworks SDK zip (redistributable binaries must not be committed).
+        required: false
   workflow_dispatch:
 
-# Global Settings
+# Crete: .NET editor + export templates. The editor binary keeps its
+# `godot.*` file name (the launcher finds `Godot*`/`Crete*` exes).
+
 env:
-  SCONS_FLAGS: >-
-    dev_mode=yes
-    module_text_server_fb_enabled=yes
-    debug_symbols=no
-  SCONS_CACHE_MSVC_CONFIG: true
-  PYTHONIOENCODING: utf8
+  # Only place where we should specify flags.
+  SCONS_FLAGS: warnings=extra werror=yes strict=yes verbose=yes debug_symbols=no
+
+concurrency:
+  group: ci-${{ github.ref }}-windows
+  cancel-in-progress: true
 
 jobs:
-  build-windows:
-    # Windows 10 with latest image
-    runs-on: windows-latest
-    name: ${{ matrix.name }}
-    timeout-minutes: 120
+  build-windows-editor:
+    runs-on: windows-2022
+    name: Editor w/ Mono (Crete, target=editor)
+    timeout-minutes: 150
+    env:
+      CRETE_FLAGS: >-
+        module_mono_enabled=yes
+        module_gdscript_enabled=no
+        module_openxr_enabled=no
+        tests=yes
+        compiledb=yes
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        with:
+          cache-name: windows-editor-mono
+        continue-on-error: true
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Steamworks SDK (optional)
+        id: steam
+        shell: bash
+        env:
+          STEAMWORKS_SDK_URL: ${{ secrets.STEAMWORKS_SDK_URL }}
+        run: |
+          if [ -n "$STEAMWORKS_SDK_URL" ]; then
+            echo "Downloading Steamworks SDK..."
+            curl -fsSL "$STEAMWORKS_SDK_URL" -o /tmp/steamworks_sdk.zip
+            rm -rf /tmp/steamworks_sdk && mkdir -p /tmp/steamworks_sdk
+            unzip -q /tmp/steamworks_sdk.zip -d /tmp/steamworks_sdk
+            rm -rf modules/godotsteam/sdk && mkdir -p modules/godotsteam/sdk
+            if [ -d /tmp/steamworks_sdk/public ]; then
+              mv /tmp/steamworks_sdk/* modules/godotsteam/sdk/
+            else
+              mv /tmp/steamworks_sdk/*/* modules/godotsteam/sdk/
+            fi
+            ls modules/godotsteam/sdk/
+            echo "steam-flags=module_godotsteam_enabled=yes module_crete_steam_stub_enabled=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "No STEAMWORKS_SDK_URL secret; building with the Crete Steam stub."
+            echo "steam-flags=module_godotsteam_enabled=no module_crete_steam_stub_enabled=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ env.CRETE_FLAGS }} ${{ steps.steam.outputs.steam-flags }}
+          platform: windows
+          target: editor
+
+      - name: Style checks via clangd-tidy
+        if: inputs.changed-files != ''
+        uses: ./.github/actions/clangd-tidy
+        with:
+          changed-files: ${{ inputs.changed-files }}
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: windows-editor-mono
+        continue-on-error: true
+
+      - name: Generate C# glue
+        shell: bash
+        run: |
+          ./bin/godot.windows.editor.x86_64.mono.console.exe --headless --generate-mono-glue ./modules/mono/glue
+
+      - name: Build .NET solutions
+        shell: bash
+        run: |
+          dotnet --info
+          ./modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin --godot-platform=windows --werror
+
+      - name: Prepare artifact
+        shell: bash
+        run: |
+          rm -rf ./bin/build_deps
+          rm -f ./bin/*.pdb
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: windows-editor-mono
+
+      - name: Unit tests
+        shell: bash
+        run: |
+          ./bin/godot.windows.editor.x86_64.mono.console.exe --version
+          ./bin/godot.windows.editor.x86_64.mono.console.exe --headless --test --force-colors
+
+      - name: .NET source generators tests
+        shell: bash
+        run: |
+          dotnet test modules/mono/editor/Godot.NET.Sdk/Godot.SourceGenerators.Tests
+
+      - name: Crete C# agent-runner tests
+        shell: bash
+        run: |
+          dotnet run --project tests/csharp/agent_runner_test/agent_runner_test.csproj --configuration Release
+
+      - name: Crete C# publish-core tests (OS keychain live)
+        shell: bash
+        run: |
+          dotnet run --project tests/csharp/publish_core_test/publish_core_test.csproj --configuration Release
+
+  build-windows-templates:
+    if: inputs.templates
+    runs-on: windows-2022
+    name: Template w/ Mono (Crete, target=${{ matrix.target }})
+    timeout-minutes: 150
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: Editor (target=editor)
-            cache-name: windows-editor
-            target: editor
-            scons-flags: >-
-              windows_subsystem=console
-              vsproj=yes
-              vsproj_gen_only=no
-            bin: ./bin/godot.windows.editor.x86_64.exe
-            compiler: msvc
-
-          - name: Editor w/ clang-cl (target=editor, use_llvm=yes)
-            cache-name: windows-editor-clang
-            target: editor
-            scons-flags: >-
-              windows_subsystem=console
-              use_llvm=yes
-            bin: ./bin/godot.windows.editor.x86_64.llvm.exe
-            compiler: clang
-
-          - name: Template (target=template_release)
-            cache-name: windows-template
-            target: template_release
-            bin: ./bin/godot.windows.template_release.x86_64.console.exe
-            compiler: msvc
-
-          - name: Template w/ GCC (target=template_release, use_mingw=yes)
-            cache-name: windows-template-gcc
-            # MinGW takes MUCH longer to compile; save time by only targeting Template.
-            target: template_release
-            scons-flags: use_mingw=yes
-            bin: ./bin/godot.windows.template_release.x86_64.console.exe
-            compiler: gcc
-
+          - target: template_release
+            cache-name: windows-template-mono
+            bin: ./bin/godot.windows.template_release.x86_64.mono.exe
+          - target: template_debug
+            cache-name: windows-template-mono-debug
+            bin: ./bin/godot.windows.template_debug.x86_64.mono.exe
+    env:
+      CRETE_FLAGS: >-
+        module_mono_enabled=yes
+        module_gdscript_enabled=no
+        module_openxr_enabled=no
+        tests=yes
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -70,49 +182,34 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Download Direct3D 12 SDK components
-        shell: sh
-        id: d3d12-sdk
+      - name: Steamworks SDK (optional)
+        id: steam
+        shell: bash
+        env:
+          STEAMWORKS_SDK_URL: ${{ secrets.STEAMWORKS_SDK_URL }}
         run: |
-          if python ./misc/scripts/install_d3d12_sdk_windows.py; then
-            echo "D3D12_ENABLED=yes" >> "$GITHUB_OUTPUT"
+          if [ -n "$STEAMWORKS_SDK_URL" ]; then
+            echo "Downloading Steamworks SDK..."
+            curl -fsSL "$STEAMWORKS_SDK_URL" -o /tmp/steamworks_sdk.zip
+            rm -rf /tmp/steamworks_sdk && mkdir -p /tmp/steamworks_sdk
+            unzip -q /tmp/steamworks_sdk.zip -d /tmp/steamworks_sdk
+            rm -rf modules/godotsteam/sdk && mkdir -p modules/godotsteam/sdk
+            if [ -d /tmp/steamworks_sdk/public ]; then
+              mv /tmp/steamworks_sdk/* modules/godotsteam/sdk/
+            else
+              mv /tmp/steamworks_sdk/*/* modules/godotsteam/sdk/
+            fi
+            ls modules/godotsteam/sdk/
+            echo "steam-flags=module_godotsteam_enabled=yes module_crete_steam_stub_enabled=no" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::Windows: Direct3D 12 SDK installation failed, building without Direct3D 12 support."
-            echo "D3D12_ENABLED=no" >> "$GITHUB_OUTPUT"
-          fi
-        continue-on-error: true
-
-      - name: Download pre-built ANGLE
-        shell: sh
-        id: angle-sdk
-        run: |
-          if python ./misc/scripts/install_angle.py; then
-            echo "ANGLE_ENABLED=yes" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::ANGLE SDK installation failed, building without ANGLE support."
-            echo "ANGLE_ENABLED=no" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Download WinRT components
-        shell: sh
-        run: python ./misc/scripts/install_winrt.py
-        continue-on-error: true
-
-      - name: Download pre-built AccessKit
-        shell: sh
-        id: accesskit-sdk
-        run: |
-          if python ./misc/scripts/install_accesskit.py; then
-            echo "ACCESSKIT_ENABLED=yes" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::AccessKit SDK installation failed, building without AccessKit support."
-            echo "ACCESSKIT_ENABLED=no" >> "$GITHUB_OUTPUT"
+            echo "No STEAMWORKS_SDK_URL secret; building with the Crete Steam stub."
+            echo "steam-flags=module_godotsteam_enabled=no module_crete_steam_stub_enabled=yes" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Compilation
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }} d3d12=${{ steps.d3d12-sdk.outputs.D3D12_ENABLED }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }} angle=${{ steps.angle-sdk.outputs.ANGLE_ENABLED }}
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ env.CRETE_FLAGS }} ${{ steps.steam.outputs.steam-flags }}
           platform: windows
           target: ${{ matrix.target }}
 
@@ -123,19 +220,17 @@ jobs:
         continue-on-error: true
 
       - name: Prepare artifact
-        if: matrix.compiler == 'msvc'
+        shell: bash
         run: |
-          Remove-Item bin/build_deps -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item bin/* -Include *.exp,*.lib,*.pdb -Force
+          rm -rf ./bin/build_deps
+          rm -f ./bin/*.pdb
 
       - name: Upload artifact
-        if: matrix.compiler == 'msvc'
         uses: ./.github/actions/upload-artifact
         with:
           name: ${{ matrix.cache-name }}
 
-      - name: Unit tests
+      - name: Smoke test
+        shell: bash
         run: |
           ${{ matrix.bin }} --version
-          ${{ matrix.bin }} --help
-          ${{ matrix.bin }} --test --force-colors

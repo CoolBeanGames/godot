@@ -595,3 +595,54 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   headless.
 - Results: build DONE; full suite **1387 passed, 0 failed, 3
   skipped; 356,627 assertions. Status: SUCCESS.**
+
+## Step 19 (P4): CI (editor + templates, Linux/Windows/Web) (DONE)
+
+- `linux_builds.yml`: rewritten into `build-linux-editor`
+  (always: mono editor + doctest + source-generator tests +
+  agent-runner tests + `--crete-e2e-docks` marker greps) and
+  `build-linux-templates` (only when the `templates` input is
+  true: release+debug template matrix, `fail-fast: false`).
+  Crete SCons flags (`module_mono_enabled=yes`,
+  `module_gdscript_enabled=no`, `module_openxr_enabled=no`,
+  `tests=yes`, `compiledb=yes` on the editor).
+- `windows_builds.yml` + `web_builds.yml`: were env-only stubs
+  with no jobs; replaced with real jobs mirroring Linux
+  (Windows editor on `windows-2022` adds the live-OS-keychain
+  publish-core tests; Web builds release+debug wasm templates
+  via `mymindstorm/setup-emsdk@v14` pinned at 4.0.10, no
+  editor job).
+- `runner.yml`: PR/push flow calls Linux + Windows with
+  `changed-files` + `secrets: inherit` (templates default off,
+  so PR CI stays editor-only and fast); the Web call is removed
+  (release-only, too heavy for PRs).
+- `crete_release.yml` (new): on `*-stable` tags (validated
+  `N.M...-stable`) calls all three builds with `templates:
+  true`, then zips editor + templates per the launcher
+  contract (`crete-<tag>-win64-dotnet.zip`,
+  `-linux64-dotnet.zip`, `-templates-<win64|linux64|web>-
+  dotnet.zip`) and `gh release create` + `upload --clobber`.
+  Manual dispatches build everything but publish nothing.
+- Steam: real SDK only via the `STEAMWORKS_SDK_URL` secret
+  (unzipped to `modules/godotsteam/sdk/`, godotsteam on + stub
+  off); empty secret keeps the Step 12 stub. Same step on all
+  three platforms.
+- Static gates: `pre-commit/mirrors-clang-format` pinned
+  `v21.1.7`; clang-format fixed 4 fork-touched files
+  (whitespace in `editor_node.cpp`/`main.cpp`, an include move
+  in `script_text_editor.cpp`, a trailing line in
+  `multiplayer_debugger.cpp`). `codespell` renamed one
+  misnamed local in `agent_runner_test` (suite still 29/29).
+- E2E marker greps in CI (`e2e DONE`, `dock_9=[...10 docks]`,
+  `signals2=[Signals (1)]`, `lock_action=locked`,
+  `banner=yes`, `thumbs=on`, `hscroll=off`, `import=landed`)
+  match the locally proven headless run.
+- Local proof: `yaml.safe_load` parses all five workflows,
+  agent suite 29/29, E2E markers all green headless.
+  Known-broken upstream `gitignore_check.sh`
+  (`**/*` exceeds ARG_MAX, green by accident) left untouched
+  as out of scope.
+- Results: build DONE; full suite **1387 passed, 0 failed, 3
+  skipped; 356,627 assertions. Status: SUCCESS.** Commit on
+  `crete`; only CI itself can prove the Linux/Web/Steam-SDK
+  paths.

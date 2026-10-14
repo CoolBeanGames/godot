@@ -196,4 +196,3 @@ void MultiplayerDebugger::RPCProfiler::tick(double p_frame_time, double p_proces
 		EngineDebugger::get_singleton()->send_message("multiplayer:rpc", frame.serialize());
 	}
 }
-

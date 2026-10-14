@@ -22,15 +22,15 @@ jobs:
     uses: ./.github/workflows/linux_builds.yml
     with:
       changed-files: ${{ needs.static-checks.outputs.changed-files }}
+    secrets: inherit
 
   windows-build:
     name: 🏁 Windows
     needs: static-checks
     if: needs.static-checks.outputs.sources-changed == 'true' || github.event_name != 'pull_request'
     uses: ./.github/workflows/windows_builds.yml
+    with:
+      changed-files: ${{ needs.static-checks.outputs.changed-files }}
+    secrets: inherit
 
-  web-build:
-    name: 🌐 Web
-    needs: static-checks
-    if: needs.static-checks.outputs.sources-changed == 'true' || github.event_name != 'pull_request'
-    uses: ./.github/workflows/web_builds.yml
+  # Web templates are release-only (see crete_release.yml); too heavy for PR CI.

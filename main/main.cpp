@@ -4610,7 +4610,7 @@ int Main::start() {
 #endif
 
 		String local_game_path;
-		if (!game_path.is_empty() ) {
+		if (!game_path.is_empty()) {
 			local_game_path = game_path.replace_char('\\', '/');
 
 			if (!local_game_path.begins_with("res://")) {

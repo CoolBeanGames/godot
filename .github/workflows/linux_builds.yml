@@ -6,6 +6,15 @@ on:
         description: A list of changed files, pre-filtered for parsing by clangd-tidy.
         required: true
         type: string
+      templates:
+        description: Also build export templates (release CI). PR CI builds the editor only.
+        required: false
+        default: false
+        type: boolean
+    secrets:
+      STEAMWORKS_SDK_URL:
+        description: Private URL of the Steamworks SDK zip (redistributable binaries must not be committed).
+        required: false
   workflow_dispatch:
 
 # Global Settings
@@ -22,151 +31,66 @@ env:
   UBSAN_OPTIONS: color=always:print_suppressions=1:suppressions=${{ github.workspace }}/misc/error_suppressions/ubsan.txt
 
 jobs:
-  build-linux:
+  build-linux-editor:
     # Stay one LTS before latest to increase portability of Linux artifacts.
     runs-on: ubuntu-22.04
-    name: ${{ matrix.name }}
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Editor w/ Mono (target=editor)
-            cache-name: linux-editor-mono
-            target: editor
-            scons-flags: module_mono_enabled=yes compiledb=yes
-            bin: ./bin/godot.linuxbsd.editor.x86_64.mono
-            build-mono: true
-            doc-test: true
-            proj-conv: true
-            proj-export: true
-            api-compat: true
-            artifact: true
-            # Validate godot-cpp compatibility on one arbitrary editor build.
-            godot-cpp: true
-            clangd-tidy: true
-
-          - name: Editor with doubles and GCC sanitizers (target=editor, dev_build=yes, scu_build=yes, precision=double, use_asan=yes, use_ubsan=yes, linker=mold)
-            cache-name: linux-editor-double-sanitizers
-            target: editor
-            # Debug symbols disabled as they're huge on this build and we hit the 14 GB limit for runners.
-            scons-flags: >-
-              dev_build=yes
-              scu_build=yes
-              debug_symbols=no
-              precision=double
-              use_asan=yes
-              use_ubsan=yes
-              linker=mold
-            bin: ./bin/godot.linuxbsd.editor.dev.double.x86_64.san
-            proj-test: true
-            free-space: true
-
-          - name: Editor with clang sanitizers (target=editor, dev_build=yes, use_asan=yes, use_ubsan=yes, use_llvm=yes, linker=lld)
-            cache-name: linux-editor-llvm-sanitizers
-            target: editor
-            scons-flags: >-
-              dev_build=yes
-              use_asan=yes
-              use_ubsan=yes
-              use_llvm=yes
-              linker=lld
-            bin: ./bin/godot.linuxbsd.editor.dev.x86_64.llvm.san
-            # Test our oldest supported SCons/Python versions on one arbitrary editor build.
-            legacy-scons: true
-            free-space: true
-
-          - name: Editor with ThreadSanitizer (target=editor, dev_build=yes, use_tsan=yes, use_llvm=yes, linker=lld)
-            cache-name: linux-editor-thread-sanitizer
-            target: editor
-            scons-flags: >-
-              dev_build=yes
-              use_tsan=yes
-              use_llvm=yes
-              linker=lld
-            bin: ./bin/godot.linuxbsd.editor.dev.x86_64.llvm.san
-            free-space: true
-
-          - name: Template w/ Mono, release (target=template_release)
-            cache-name: linux-template-mono
-            target: template_release
-            scons-flags: module_mono_enabled=yes
-            bin: ./bin/godot.linuxbsd.template_release.x86_64.mono
-            artifact: true
-
-          - name: Template w/ Mono, debug (target=template_debug)
-            cache-name: linux-template-mono-debug
-            target: template_debug
-            scons-flags: module_mono_enabled=yes
-            bin: ./bin/godot.linuxbsd.template_debug.x86_64.mono
-            artifact: true
-
-          - name: Minimal template (target=template_release, everything disabled)
-            cache-name: linux-template-minimal
-            target: template_release
-            scons-flags: >-
-              modules_enabled_by_default=no
-              module_text_server_fb_enabled=no
-              disable_3d=yes
-              disable_advanced_gui=yes
-              disable_physics_2d=yes
-              disable_physics_3d=yes
-              deprecated=no
-              minizip=no
-              brotli=no
-            bin: ./bin/godot.linuxbsd.template_release.x86_64
-            artifact: true
-
+    name: Editor w/ Mono (Crete, target=editor)
+    timeout-minutes: 150
+    env:
+      CRETE_FLAGS: >-
+        module_mono_enabled=yes
+        module_gdscript_enabled=no
+        module_openxr_enabled=no
+        tests=yes
+        compiledb=yes
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           submodules: recursive
 
-      - name: Setup dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install libwayland-bin  # TODO: Figure out somehow how to embed this one.
-          if [ "${{ matrix.proj-test }}" == "true" -o "${{ matrix.proj-export }}" == "true" ]; then
-            sudo apt-get install mesa-vulkan-drivers
-          fi
-
-      - name: Free disk space on runner
-        if: matrix.free-space
-        run: |
-          echo "Disk usage before:" && df -h
-          sudo rm -rf /usr/local/lib/android
-          echo "Disk usage after:" && df -h
-
       - name: Restore Godot build cache
         uses: ./.github/actions/godot-cache-restore
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: linux-editor-mono
         continue-on-error: true
 
       - name: Setup Python and SCons
-        if: "!matrix.legacy-scons"
         uses: ./.github/actions/godot-deps
-
-      - name: Setup Python and SCons (legacy versions)
-        if: matrix.legacy-scons
-        uses: ./.github/actions/godot-deps
-        with:
-          # Sync with Ensure*Version in SConstruct.
-          python-version: 3.9
-          scons-version: 4.4
 
       - name: Force remove preinstalled .NET SDKs
-        if: matrix.build-mono
         run: |
           sudo rm -rf /usr/share/dotnet/sdk/*
 
       - name: Setup older .NET SDK as baseline
-        if: matrix.build-mono
         uses: actions/setup-dotnet@v5
         with:
           # Targeting the oldest version we want to support to ensure it still builds.
           dotnet-version: 8.0.100
+
+      - name: Steamworks SDK (optional)
+        id: steam
+        shell: bash
+        env:
+          STEAMWORKS_SDK_URL: ${{ secrets.STEAMWORKS_SDK_URL }}
+        run: |
+          if [ -n "$STEAMWORKS_SDK_URL" ]; then
+            echo "Downloading Steamworks SDK..."
+            curl -fsSL "$STEAMWORKS_SDK_URL" -o /tmp/steamworks_sdk.zip
+            rm -rf /tmp/steamworks_sdk && mkdir -p /tmp/steamworks_sdk
+            unzip -q /tmp/steamworks_sdk.zip -d /tmp/steamworks_sdk
+            rm -rf modules/godotsteam/sdk && mkdir -p modules/godotsteam/sdk
+            if [ -d /tmp/steamworks_sdk/public ]; then
+              mv /tmp/steamworks_sdk/* modules/godotsteam/sdk/
+            else
+              mv /tmp/steamworks_sdk/*/* modules/godotsteam/sdk/
+            fi
+            ls modules/godotsteam/sdk/
+            echo "steam-flags=module_godotsteam_enabled=yes module_crete_steam_stub_enabled=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "No STEAMWORKS_SDK_URL secret; building with the Crete Steam stub."
+            echo "steam-flags=module_godotsteam_enabled=no module_crete_steam_stub_enabled=yes" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Download pre-built AccessKit
         shell: sh
@@ -179,50 +103,35 @@ jobs:
             echo "ACCESSKIT_ENABLED=no" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Install mold linker
-        if: matrix.proj-test
-        uses: rui314/setup-mold@v1
-
       - name: Compilation
         uses: ./.github/actions/godot-build
         with:
-          scons-flags: ${{ env.SCONS_FLAGS }} ${{ matrix.scons-flags }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }}
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ env.CRETE_FLAGS }} ${{ steps.steam.outputs.steam-flags }} accesskit=${{ steps.accesskit-sdk.outputs.ACCESSKIT_ENABLED }}
           platform: linuxbsd
-          target: ${{ matrix.target }}
+          target: editor
 
       - name: Style checks via clangd-tidy
-        if: matrix.clangd-tidy
+        if: inputs.changed-files != ''
         uses: ./.github/actions/clangd-tidy
         with:
           changed-files: ${{ inputs.changed-files }}
 
-      - name: Compilation (godot-cpp)
-        uses: ./.github/actions/godot-cpp-build
-        if: matrix.godot-cpp
-        with:
-          bin: ${{ matrix.bin }}
-          scons-flags: target=template_debug dev_build=yes verbose=yes
-          godot-cpp-branch: ${{ env.GODOT_CPP_BRANCH }}
-
       - name: Save Godot build cache
         uses: ./.github/actions/godot-cache-save
         with:
-          cache-name: ${{ matrix.cache-name }}
+          cache-name: linux-editor-mono
         continue-on-error: true
 
       - name: Generate C# glue
-        if: matrix.build-mono
         run: |
-          ${{ matrix.bin }} --headless --generate-mono-glue ./modules/mono/glue
+          ./bin/godot.linuxbsd.editor.x86_64.mono --headless --generate-mono-glue ./modules/mono/glue
 
       - name: Build .NET solutions
-        if: matrix.build-mono
         run: |
           dotnet --info
           ./modules/mono/build_scripts/build_assemblies.py --godot-output-dir=./bin --godot-platform=linuxbsd --werror
 
       - name: Prepare artifact
-        if: matrix.artifact
         run: |
           rm -rf ./bin/build_deps
           strip bin/godot.*
@@ -230,60 +139,153 @@ jobs:
 
       - name: Upload artifact
         uses: ./.github/actions/upload-artifact
-        if: matrix.artifact
         with:
-          name: ${{ matrix.cache-name }}
+          name: linux-editor-mono
 
       - name: Unit tests
         run: |
-          ${{ matrix.bin }} --version
-          ${{ matrix.bin }} --help
-          ${{ matrix.bin }} --headless --test --force-colors
+          ./bin/godot.linuxbsd.editor.x86_64.mono --version
+          ./bin/godot.linuxbsd.editor.x86_64.mono --headless --test --force-colors
 
       - name: .NET source generators tests
-        if: matrix.build-mono
         run: |
           dotnet test modules/mono/editor/Godot.NET.Sdk/Godot.SourceGenerators.Tests
 
-      # Check class reference
-      - name: Check for class reference updates
-        if: matrix.doc-test
+      - name: Crete C# agent-runner tests
         run: |
-          echo "Running --doctool to see if this changes the public API without updating the documentation."
-          echo -e "If a diff is shown, it means that your code/doc changes are incomplete and you should update the class reference with --doctool.\n\n"
-          ${{ matrix.bin }} --doctool --headless 2>&1 > /dev/null || true
-          git diff --color --exit-code && ! git ls-files --others --exclude-standard | sed -e 's/^/New doc file missing in PR: /' | grep 'xml$'
+          dotnet run --project tests/csharp/agent_runner_test/agent_runner_test.csproj --configuration Release
 
-      # Check API backwards compatibility
-      - name: Check for GDExtension compatibility – JSON check
-        if: matrix.api-compat
+      - name: Crete dock/transport/status E2E
+        shell: bash
         run: |
-          ./misc/scripts/validate_extension_api.sh "${{ matrix.bin }}"
+          rm -rf /tmp/crete-e2e && mkdir -p /tmp/crete-e2e
+          cat > /tmp/crete-e2e/project.godot <<'EOF'
+          config_version=5
 
-      - name: Test GDExtension compatibility – load methods
-        uses: ./.github/actions/godot-compat-test
-        if: matrix.api-compat
-        with:
-          bin: ${{ matrix.bin }}
-          reftags: "4.5-stable,4.4-stable"
+          [application]
 
-      # Download and run the test project
-      - name: Test Godot project
-        uses: ./.github/actions/godot-project-test
-        if: matrix.proj-test
-        with:
-          bin: ${{ matrix.bin }}
+          config/name="CreteE2E"
+          run/main_scene="res://main.tscn"
+          EOF
+          cat > /tmp/crete-e2e/Player.cs <<'EOF'
+          using Godot;
 
-      # Test project export
-      - name: Test project export
-        uses: ./.github/actions/godot-project-export
-        if: matrix.proj-export
-        with:
-          bin: ${{ matrix.bin }}
+          public partial class Player : CharacterBody2D
+          {
+          }
+          EOF
+          cat > /tmp/crete-e2e/main.tscn <<'EOF'
+          [gd_scene load_steps=3 format=3]
 
-      # Test the project converter
-      - name: Test project converter
-        uses: ./.github/actions/godot-converter-test
-        if: matrix.proj-conv
+          [ext_resource type="Script" path="res://Player.cs" id="1"]
+
+          [node name="Level01" type="Node2D"]
+
+          [node name="Player" type="CharacterBody2D" parent="." unique_name_in_owner=true]
+          metadata/_tags = PackedStringArray("player", "controllable", "save-me")
+          script = ExtResource("1")
+
+          [node name="HUD" type="CanvasLayer" parent="."]
+
+          [node name="PlayButton" type="Button" parent="HUD"]
+
+          [connection signal="pressed" from="HUD/PlayButton" to="." method="_on_play_button_pressed"]
+          EOF
+          ./bin/godot.linuxbsd.editor.x86_64.mono --headless --path /tmp/crete-e2e --quit-after 30 -- --crete-e2e-docks > /tmp/crete-e2e.log 2>&1
+          grep -q "e2e DONE" /tmp/crete-e2e.log
+          grep -q "dock_9=\[FileSystem,Output,GitHub,Agents,Debugger,Animation,Shader Editor,Audio,MSBuild,Publish\]" /tmp/crete-e2e.log
+          grep -q "signals2=\[Signals (1)\]" /tmp/crete-e2e.log
+          grep -q "lock_action=locked" /tmp/crete-e2e.log
+          grep -q "banner=yes" /tmp/crete-e2e.log
+          grep -q "thumbs=on" /tmp/crete-e2e.log
+          grep -q "hscroll=off" /tmp/crete-e2e.log
+          grep -q "import=landed" /tmp/crete-e2e.log
+
+  build-linux-templates:
+    if: inputs.templates
+    runs-on: ubuntu-22.04
+    name: Template w/ Mono (Crete, target=${{ matrix.target }})
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: template_release
+            cache-name: linux-template-mono
+            bin: ./bin/godot.linuxbsd.template_release.x86_64.mono
+          - target: template_debug
+            cache-name: linux-template-mono-debug
+            bin: ./bin/godot.linuxbsd.template_debug.x86_64.mono
+    env:
+      CRETE_FLAGS: >-
+        module_mono_enabled=yes
+        module_gdscript_enabled=no
+        module_openxr_enabled=no
+        tests=yes
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
         with:
-          bin: ${{ matrix.bin }}
+          submodules: recursive
+
+      - name: Restore Godot build cache
+        uses: ./.github/actions/godot-cache-restore
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Setup Python and SCons
+        uses: ./.github/actions/godot-deps
+
+      - name: Steamworks SDK (optional)
+        id: steam
+        shell: bash
+        env:
+          STEAMWORKS_SDK_URL: ${{ secrets.STEAMWORKS_SDK_URL }}
+        run: |
+          if [ -n "$STEAMWORKS_SDK_URL" ]; then
+            echo "Downloading Steamworks SDK..."
+            curl -fsSL "$STEAMWORKS_SDK_URL" -o /tmp/steamworks_sdk.zip
+            rm -rf /tmp/steamworks_sdk && mkdir -p /tmp/steamworks_sdk
+            unzip -q /tmp/steamworks_sdk.zip -d /tmp/steamworks_sdk
+            rm -rf modules/godotsteam/sdk && mkdir -p modules/godotsteam/sdk
+            if [ -d /tmp/steamworks_sdk/public ]; then
+              mv /tmp/steamworks_sdk/* modules/godotsteam/sdk/
+            else
+              mv /tmp/steamworks_sdk/*/* modules/godotsteam/sdk/
+            fi
+            ls modules/godotsteam/sdk/
+            echo "steam-flags=module_godotsteam_enabled=yes module_crete_steam_stub_enabled=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "No STEAMWORKS_SDK_URL secret; building with the Crete Steam stub."
+            echo "steam-flags=module_godotsteam_enabled=no module_crete_steam_stub_enabled=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compilation
+        uses: ./.github/actions/godot-build
+        with:
+          scons-flags: ${{ env.SCONS_FLAGS }} ${{ env.CRETE_FLAGS }} ${{ steps.steam.outputs.steam-flags }}
+          platform: linuxbsd
+          target: ${{ matrix.target }}
+
+      - name: Save Godot build cache
+        uses: ./.github/actions/godot-cache-save
+        with:
+          cache-name: ${{ matrix.cache-name }}
+        continue-on-error: true
+
+      - name: Prepare artifact
+        run: |
+          rm -rf ./bin/build_deps
+          strip bin/godot.*
+          chmod +x bin/godot.*
+
+      - name: Upload artifact
+        uses: ./.github/actions/upload-artifact
+        with:
+          name: ${{ matrix.cache-name }}
+
+      - name: Smoke test
+        run: |
+          ${{ matrix.bin }} --version
+

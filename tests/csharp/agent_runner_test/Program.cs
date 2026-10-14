@@ -108,8 +108,9 @@ static class AgentCoreTests
         try
         {
             // Fake provider: echoes its args, writes a file, exits 0.
-            string fake = Path.Combine(root, "fake-agent.cmd");
-            File.WriteAllText(fake, "@echo off\r\necho FAKE-OUT %*\r\necho touched > touched.txt\r\nexit /b 0\r\n");
+            string fake = WriteFake(root, "fake-agent",
+                "@echo off\r\necho FAKE-OUT %*\r\necho touched > touched.txt\r\nexit /b 0\r\n",
+                "#!/bin/sh\necho \"FAKE-OUT $@\"\necho touched > touched.txt\nexit 0\n");
 
             var lines = new List<string>();
             AgentRunResult r = await AgentRunner.RunAsync(fake, new[] { "exec", "hello task" },
@@ -119,9 +120,10 @@ static class AgentCoreTests
             Check(lines.Count > 0 && lines[0].Contains("FAKE-OUT"), "runner streams lines");
             Check(File.Exists(Path.Combine(root, "touched.txt")), "runner cwd + side effect");
 
-            string failer = Path.Combine(root, "fail.cmd");
-            File.WriteAllText(failer, "@echo off\r\necho OOPS 1>&2\r\nexit /b 3\r\n");
-            AgentRunResult rf = await AgentRunner.RunAsync(failer, Array.Empty<string>(),
+            string failure = WriteFake(root, "fail",
+                "@echo off\r\necho OOPS 1>&2\r\nexit /b 3\r\n",
+                "#!/bin/sh\necho OOPS 1>&2\nexit 3\n");
+            AgentRunResult rf = await AgentRunner.RunAsync(failure, Array.Empty<string>(),
                 root, TimeSpan.FromSeconds(30), CancellationToken.None);
             Check(!rf.Ok && rf.ExitCode == 3, "runner exit code passthrough");
             Check(rf.Stderr.Contains("OOPS"), "runner captures stderr");
@@ -131,16 +133,18 @@ static class AgentCoreTests
                 root, TimeSpan.FromSeconds(10), CancellationToken.None);
             Check(!missing.Ok && missing.ExitCode == 127, "runner missing exe -> 127");
 
-            string envProbe = Path.Combine(root, "env.cmd");
-            File.WriteAllText(envProbe, "@echo off\r\necho MARKER=%CRETE_TEST_MARKER%\r\n");
+            string envProbe = WriteFake(root, "env",
+                "@echo off\r\necho MARKER=%CRETE_TEST_MARKER%\r\n",
+                "#!/bin/sh\necho \"MARKER=$CRETE_TEST_MARKER\"\n");
             var env = new Dictionary<string, string> { ["CRETE_TEST_MARKER"] = "sentinel42" };
             AgentRunResult re = await AgentRunner.RunAsync(envProbe, Array.Empty<string>(),
                 root, TimeSpan.FromSeconds(30), CancellationToken.None, null, null, env);
             Check(re.Ok && re.Stdout.Contains("MARKER=sentinel42"), "runner env passthrough");
 
-            // Sleep ~25s via ping; timeout must kill it fast.
-            string sleep = Path.Combine(root, "sleep.cmd");
-            File.WriteAllText(sleep, "@echo off\r\necho SLEEPING\r\nping -n 25 127.0.0.1 >nul\r\necho WOKE\r\n");
+            // Sleep ~25s; timeout must kill it fast.
+            string sleep = WriteFake(root, "sleep",
+                "@echo off\r\necho SLEEPING\r\nping -n 25 127.0.0.1 >nul\r\necho WOKE\r\n",
+                "#!/bin/sh\necho SLEEPING\nsleep 25\necho WOKE\n");
             var sw = System.Diagnostics.Stopwatch.StartNew();
             AgentRunResult rt = await AgentRunner.RunAsync(sleep, Array.Empty<string>(),
                 root, TimeSpan.FromSeconds(3), CancellationToken.None);
@@ -166,5 +170,20 @@ static class AgentCoreTests
         string dir = Path.Combine(Path.GetTempPath(), "crete-agent-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         return dir;
+    }
+
+    static string WriteFake(string root, string name, string windowsBody, string unixBody)
+    {
+        bool windows = OperatingSystem.IsWindows();
+        string path = Path.Combine(root, name + (windows ? ".cmd" : ".sh"));
+        File.WriteAllText(path, windows ? windowsBody : unixBody);
+        if (!windows)
+        {
+            File.SetUnixFileMode(path,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        }
+        return path;
     }
 }

@@ -53,7 +53,6 @@
 #include "editor/settings/editor_command_palette.h"
 #include "editor/settings/editor_settings.h"
 #include "editor/themes/editor_scale.h"
-#include "modules/modules_enabled.gen.h" // For gdscript.
 #include "scene/gui/grid_container.h"
 #include "scene/gui/menu_button.h"
 #include "scene/gui/rich_text_label.h"
@@ -61,6 +60,8 @@
 #include "scene/main/scene_tree.h"
 #include "scene/resources/style_box_flat.h"
 #include "servers/rendering/rendering_server.h"
+
+#include "modules/modules_enabled.gen.h" // For gdscript.
 
 void ConnectionInfoDialog::ok_pressed() {
 }

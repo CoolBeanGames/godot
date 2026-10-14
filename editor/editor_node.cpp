@@ -6544,7 +6544,7 @@ void EditorNode::_load_editor_layout() {
 		int ext_id = int(EDITOR_GET("dotnet/editor/external_editor"));
 		String ext = (ext_id >= 0 && ext_id < 8) ? ext_names[ext_id] : vformat("id %d", ext_id);
 		log->add_message(vformat("Crete editor (Godot %d.%d.%d base) — %s · External editor: %s",
-				GODOT_VERSION_MAJOR, GODOT_VERSION_MINOR, GODOT_VERSION_PATCH, method, ext),
+								 GODOT_VERSION_MAJOR, GODOT_VERSION_MINOR, GODOT_VERSION_PATCH, method, ext),
 				EditorLog::MSG_TYPE_EDITOR);
 	}
 	for (const String &arg : OS::get_singleton()->get_cmdline_user_args()) {
