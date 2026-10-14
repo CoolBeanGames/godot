@@ -3466,6 +3466,16 @@ bool SceneTreeDock::_check_node_recursive(Variant &r_variant, Node *p_node, Node
 void SceneTreeDock::set_edited_scene(Node *p_scene) {
 	edited_scene = p_scene;
 	_update_create_root_dialog_visibility();
+	// Crete: Hierarchy tab shows the edited scene.
+	if (p_scene == nullptr) {
+		set_title(TTR("Hierarchy"));
+	} else {
+		String fname = p_scene->get_scene_file_path().get_file();
+		if (fname.is_empty()) {
+			fname = p_scene->get_name();
+		}
+		set_title(TTR("Hierarchy") + " — " + fname);
+	}
 }
 
 static bool _is_same_selection(const Vector<Node *> &p_first, const HashMap<ObjectID, Object *> &p_second) {
@@ -4991,9 +5001,12 @@ void SceneTreeDock::_update_configuration_warning() {
 }
 
 SceneTreeDock::SceneTreeDock(Node *p_scene_root, EditorSelection *p_editor_selection, EditorData &p_editor_data) {
-	set_name(TTRC("Scene"));
+	// Crete: the Scene dock is the Hierarchy; the layout key stays "Scene"
+	// so saved dock layouts keep working.
+	set_name(TTRC("Hierarchy"));
+	set_layout_key("Scene");
 	set_icon_name("PackedScene");
-	set_dock_shortcut(ED_SHORTCUT_AND_COMMAND("docks/open_scene", TTRC("Open Scene Dock")));
+	set_dock_shortcut(ED_SHORTCUT_AND_COMMAND("docks/open_scene", TTRC("Open Hierarchy Dock")));
 	set_default_slot(EditorDock::DOCK_SLOT_LEFT_UR);
 
 	singleton = this;
@@ -5033,19 +5046,12 @@ SceneTreeDock::SceneTreeDock(Node *p_scene_root, EditorSelection *p_editor_selec
 	ED_SHORTCUT("scene_tree/make_root", TTRC("Make Scene Root"));
 	ED_SHORTCUT("scene_tree/save_branch_as_scene", TTRC("Save Branch as Scene..."));
 	ED_SHORTCUT("scene_tree/copy_node_path", TTRC("Copy Node Path"), KeyModifierMask::CMD_OR_CTRL | KeyModifierMask::SHIFT | Key::C);
-	ED_SHORTCUT("scene_tree/show_in_file_system", TTRC("Show in FileSystem"));
+	ED_SHORTCUT("scene_tree/show_in_file_system", TTRC("Show in Project"));
 	ED_SHORTCUT("scene_tree/toggle_unique_name", TTRC("Toggle Access as Unique Name"));
 	ED_SHORTCUT("scene_tree/toggle_editable_children", TTRC("Toggle Editable Children"));
 	ED_SHORTCUT_ARRAY("scene_tree/open_scene_in_editor", TTRC("Open Scene in Editor"), { int32_t(Key::SLASH), int32_t(KeyModifierMask::SHIFT | Key::COLON) });
 	ED_SHORTCUT("scene_tree/delete_no_confirm", TTRC("Delete (No Confirm)"), KeyModifierMask::SHIFT | Key::KEY_DELETE);
 	ED_SHORTCUT("scene_tree/delete", TTRC("Delete"), Key::KEY_DELETE);
-
-	button_add = memnew(Button);
-	button_add->set_theme_type_variation("FlatMenuButton");
-	button_add->connect(SceneStringName(pressed), callable_mp(this, &SceneTreeDock::_tool_selected).bind(TOOL_NEW, false));
-	button_add->set_tooltip_text(TTRC("Add/Create a New Node."));
-	button_add->set_shortcut(ED_GET_SHORTCUT("scene_tree/add_child_node"));
-	filter_hbc->add_child(button_add);
 
 	button_instance = memnew(Button);
 	button_instance->set_theme_type_variation("FlatMenuButton");
@@ -5055,13 +5061,19 @@ SceneTreeDock::SceneTreeDock(Node *p_scene_root, EditorSelection *p_editor_selec
 	filter_hbc->add_child(button_instance);
 	main_vbox->add_child(filter_hbc);
 
+	// Crete: the filter gets its own full-width row under the buttons.
+	HBoxContainer *filter_row_hbc = memnew(HBoxContainer);
+	filter_row_hbc->add_theme_constant_override("separate", 0);
+	main_vbox->add_child(filter_row_hbc);
+
 	// The "Filter Nodes" text input above the Scene Tree Editor.
 	filter = memnew(LineEdit);
+	filter->set_name("CreteHierarchyFilter");
 	filter->set_h_size_flags(SIZE_EXPAND_FILL);
-	filter->set_placeholder(TTRC("Filter Nodes"));
+	filter->set_placeholder(TTRC("Filter nodes… (t:Texture, g:Group)"));
 	filter->set_accessibility_name(TTRC("Filter Nodes"));
 	filter->set_tooltip_text(TTRC("Filter nodes by entering a part of their name, type (if prefixed with \"type:\" or \"t:\")\nor group (if prefixed with \"group:\" or \"g:\"). Filtering is case-insensitive."));
-	filter_hbc->add_child(filter);
+	filter_row_hbc->add_child(filter);
 	filter->add_theme_constant_override("minimum_character_width", 0);
 	filter->connect(SceneStringName(text_changed), callable_mp(this, &SceneTreeDock::_filter_changed));
 	filter->connect(SceneStringName(gui_input), callable_mp(this, &SceneTreeDock::_filter_gui_input));
@@ -5101,6 +5113,19 @@ SceneTreeDock::SceneTreeDock(Node *p_scene_root, EditorSelection *p_editor_selec
 
 	PopupMenu *tree_menu = button_tree_menu->get_popup();
 	tree_menu->connect(SceneStringName(id_pressed), callable_mp(this, &SceneTreeDock::_tool_selected).bind(false));
+
+	// Crete: Create-node "+" sits at the right end of the button row.
+	Control *toolbar_spacer = memnew(Control);
+	toolbar_spacer->set_h_size_flags(SIZE_EXPAND_FILL);
+	filter_hbc->add_child(toolbar_spacer);
+
+	button_add = memnew(Button);
+	button_add->set_name("CreteHierarchyAdd");
+	button_add->set_theme_type_variation("FlatMenuButton");
+	button_add->connect(SceneStringName(pressed), callable_mp(this, &SceneTreeDock::_tool_selected).bind(TOOL_NEW, false));
+	button_add->set_tooltip_text(TTRC("Add/Create a New Node."));
+	button_add->set_shortcut(ED_GET_SHORTCUT("scene_tree/add_child_node"));
+	filter_hbc->add_child(button_add);
 
 	button_panel = memnew(PanelContainer);
 	button_panel->set_theme_type_variation("PanelContainerTabbarInner");
@@ -5143,6 +5168,10 @@ SceneTreeDock::SceneTreeDock(Node *p_scene_root, EditorSelection *p_editor_selec
 	scene_tree = memnew(SceneTreeEditor(false, true, true));
 	main_mc->add_child(scene_tree);
 	scene_tree->get_scene_tree()->set_scroll_hint_mode(Tree::SCROLL_HINT_MODE_TOP);
+	// Crete: Hierarchy never scrolls horizontally; long names ellipsis
+	// (TreeItem cells already default to OVERRUN_TRIM_ELLIPSIS).
+	scene_tree->get_scene_tree()->set_h_scroll_enabled(false);
+	scene_tree->get_scene_tree()->set_column_clip_content(0, true);
 	scene_tree->connect("rmb_pressed", callable_mp(this, &SceneTreeDock::_tree_rmb));
 
 	scene_tree->connect("node_selected", callable_mp(this, &SceneTreeDock::_node_selected), CONNECT_DEFERRED);

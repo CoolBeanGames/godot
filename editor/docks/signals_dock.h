@@ -38,6 +38,10 @@ class SignalsDock : public EditorDock {
 	GDCLASS(SignalsDock, EditorDock);
 
 	ConnectionsDock *connections = nullptr;
+	ObjectID selected_id;
+	bool history_connected = false;
+
+	void _update_title();
 
 	static inline SignalsDock *singleton = nullptr;
 

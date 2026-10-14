@@ -36,6 +36,7 @@
 class Button;
 class ConfigFile;
 class EditorDock;
+class EditorFileDialog;
 class EditorToaster;
 class HBoxContainer;
 
@@ -60,6 +61,8 @@ class EditorBottomPanel : public DockTabContainer {
 	ProgressIndicator *progress_indicator = nullptr;
 	Button *pin_button = nullptr;
 	Button *expand_button = nullptr;
+	Button *crete_import_button = nullptr;
+	EditorFileDialog *crete_import_dialog = nullptr;
 
 	int previous_tab = -1;
 	bool lock_panel_switching = false;
@@ -73,6 +76,10 @@ class EditorBottomPanel : public DockTabContainer {
 	void _on_tab_changed(int p_idx);
 	void _pin_button_toggled(bool p_pressed);
 	void _expand_button_toggled(bool p_pressed);
+	void _crete_import_pressed();
+
+public:
+	void crete_import_files(const Vector<String> &p_files);
 	void _update_center_split_offset();
 	EditorDock *_get_dock_from_control(Control *p_control) const;
 

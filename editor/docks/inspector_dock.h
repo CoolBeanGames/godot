@@ -34,10 +34,13 @@
 #include "editor/editor_data.h"
 #include "editor/gui/create_dialog.h"
 #include "editor/inspector/editor_inspector.h"
+#include "scene/gui/box_container.h"
 #include "scene/gui/button.h"
 #include "scene/gui/dialogs.h"
+#include "scene/gui/label.h"
 #include "scene/gui/line_edit.h"
 #include "scene/gui/menu_button.h"
+#include "scene/gui/texture_rect.h"
 #include "scene/gui/tree.h"
 
 class EditorFileDialog;
@@ -93,6 +96,12 @@ class InspectorDock : public EditorDock {
 	MenuButton *object_menu = nullptr;
 	EditorObjectSelector *object_selector = nullptr;
 
+	// Crete: Unity-style edited-object header.
+	HBoxContainer *object_header = nullptr;
+	TextureRect *object_header_icon = nullptr;
+	Label *object_header_name = nullptr;
+	Label *object_header_class = nullptr;
+
 	bool info_is_warning = false; // Display in yellow and use warning icon if true.
 	Button *info = nullptr;
 	AcceptDialog *info_dialog = nullptr;
@@ -105,6 +114,8 @@ class InspectorDock : public EditorDock {
 
 	EditorPropertyNameProcessor::Style property_name_style;
 	List<Pair<StringName, Variant>> stored_properties;
+
+	void _update_object_header();
 
 	void _prepare_menu();
 	void _menu_option(int p_option);

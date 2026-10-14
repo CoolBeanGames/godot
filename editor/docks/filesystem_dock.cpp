@@ -590,7 +590,8 @@ void FileSystemDock::_notification(int p_what) {
 			always_show_folders = bool(EDITOR_GET("docks/filesystem/always_show_folders"));
 			thumbnail_size_setting = EDITOR_GET("docks/filesystem/thumbnail_size");
 
-			set_file_list_display_mode(FileSystemDock::FILE_LIST_DISPLAY_LIST);
+			// Crete: bottom (horizontal) layout keeps its thumbnail default.
+			set_file_list_display_mode(horizontal ? FileSystemDock::FILE_LIST_DISPLAY_THUMBNAILS : FileSystemDock::FILE_LIST_DISPLAY_LIST);
 
 			_update_display_mode();
 
@@ -777,6 +778,8 @@ void FileSystemDock::_set_current_path_line_edit_text(const String &p_path) {
 	} else {
 		current_path_line_edit->set_text(current_path);
 	}
+	// Crete: Project tab shows the browsed path.
+	set_title(TTR("Project") + " — " + (p_path == "Favorites" ? TTR("Favorites") : p_path));
 }
 
 void FileSystemDock::_navigate_to_path(const String &p_path, bool p_select_in_favorites, bool p_grab_focus) {
@@ -4427,10 +4430,14 @@ void FileSystemDock::_bind_methods() {
 
 FileSystemDock::FileSystemDock() {
 	singleton = this;
-	set_name(TTRC("FileSystem"));
+	// Crete: the FileSystem dock is the Project browser and lives in the
+	// bottom panel; the layout key stays "FileSystem" so saved layouts
+	// keep working.
+	set_name(TTRC("Project"));
+	set_layout_key("FileSystem");
 	set_icon_name("Folder");
-	set_dock_shortcut(ED_SHORTCUT_AND_COMMAND("docks/open_filesystem", TTRC("Open FileSystem Dock"), KeyModifierMask::ALT | Key::F));
-	set_default_slot(EditorDock::DOCK_SLOT_LEFT_BR);
+	set_dock_shortcut(ED_SHORTCUT_AND_COMMAND("docks/open_filesystem", TTRC("Open Project Dock"), KeyModifierMask::ALT | Key::F));
+	set_default_slot(EditorDock::DOCK_SLOT_BOTTOM);
 	set_available_layouts(DOCK_LAYOUT_ALL);
 
 	ProjectSettings::get_singleton()->add_hidden_prefix("file_customization/");

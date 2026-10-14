@@ -30,12 +30,17 @@
 
 #include "editor_bottom_panel.h"
 
+#include "core/config/project_settings.h"
+#include "core/io/dir_access.h"
 #include "core/object/callable_mp.h"
 #include "editor/debugger/editor_debugger_node.h"
 #include "editor/docks/editor_dock.h"
 #include "editor/docks/editor_dock_manager.h"
+#include "editor/docks/filesystem_dock.h"
 #include "editor/editor_node.h"
 #include "editor/editor_string_names.h"
+#include "editor/file_system/editor_file_system.h"
+#include "editor/gui/editor_file_dialog.h"
 #include "editor/gui/editor_toaster.h"
 #include "editor/gui/editor_version_button.h"
 #include "editor/scene/editor_scene_tabs.h"
@@ -207,6 +212,35 @@ void EditorBottomPanel::_pin_button_toggled(bool p_pressed) {
 	lock_panel_switching = p_pressed;
 }
 
+void EditorBottomPanel::_crete_import_pressed() {
+	crete_import_dialog->popup_centered_ratio(0.6);
+}
+
+void EditorBottomPanel::crete_import_files(const Vector<String> &p_files) {
+	String target_dir = FileSystemDock::get_singleton()->get_current_directory();
+	if (target_dir.is_empty() || target_dir == "Favorites") {
+		target_dir = "res://";
+	}
+	Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
+	ERR_FAIL_COND(da.is_null());
+	bool any = false;
+	for (const String &src : p_files) {
+		String dst = target_dir.path_join(src.get_file());
+		if (da->file_exists(dst)) {
+			WARN_PRINT(vformat("Import skipped (already in project): %s", dst));
+			continue;
+		}
+		if (DirAccess::copy_absolute(src, ProjectSettings::get_singleton()->globalize_path(dst)) != OK) {
+			ERR_PRINT(vformat("Could not import '%s'.", src));
+			continue;
+		}
+		any = true;
+	}
+	if (any) {
+		EditorFileSystem::get_singleton()->scan();
+	}
+}
+
 void EditorBottomPanel::set_expanded(bool p_expanded) {
 	expand_button->set_pressed(p_expanded);
 }
@@ -335,6 +369,21 @@ EditorBottomPanel::EditorBottomPanel() :
 	pin_button->set_toggle_mode(true);
 	pin_button->set_tooltip_text(TTRC("Pin Bottom Panel Switching"));
 	pin_button->connect(SceneStringName(toggled), callable_mp(this, &EditorBottomPanel::_pin_button_toggled));
+
+	// Crete: quick file import into the current Project folder.
+	crete_import_button = memnew(Button);
+	bottom_hbox->add_child(crete_import_button);
+	crete_import_button->set_theme_type_variation("BottomPanelButton");
+	crete_import_button->set_text(TTRC("+ Import…"));
+	crete_import_button->set_tooltip_text(TTRC("Copy files from disk into the current Project folder."));
+	crete_import_button->connect(SceneStringName(pressed), callable_mp(this, &EditorBottomPanel::_crete_import_pressed));
+
+	crete_import_dialog = memnew(EditorFileDialog);
+	crete_import_dialog->set_title(TTRC("Import Files into Project"));
+	crete_import_dialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
+	crete_import_dialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILES);
+	crete_import_dialog->connect("files_selected", callable_mp(this, &EditorBottomPanel::crete_import_files));
+	EditorNode::get_singleton()->get_gui_base()->add_child(crete_import_dialog);
 
 	callable_mp(this, &EditorBottomPanel::_repaint).call_deferred();
 }

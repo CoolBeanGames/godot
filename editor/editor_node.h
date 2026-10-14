@@ -641,6 +641,11 @@ private:
 
 	void _save_editor_layout();
 	void _load_editor_layout();
+	PackedStringArray _crete_sorted_bottom_keys() const;
+	void _crete_e2e_docks_open();
+	void _crete_e2e_docks_step2();
+	void _crete_e2e_docks_step3();
+	void _crete_e2e_docks_step4();
 
 	void _save_central_editor_layout_to_config(Ref<ConfigFile> p_config_file);
 	void _load_central_editor_layout_from_config(Ref<ConfigFile> p_config_file);

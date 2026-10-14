@@ -30,20 +30,56 @@
 
 #include "signals_dock.h"
 
+#include "core/object/callable_mp.h"
+#include "editor/editor_undo_redo_manager.h"
 #include "editor/scene/connections_dialog.h"
 #include "editor/settings/editor_command_palette.h"
 
 void SignalsDock::update_lists() {
 	connections->update_tree();
+	_update_title();
+}
+
+void SignalsDock::_update_title() {
+	// Crete: Signals tab shows the live connection count.
+	Object *obj = ObjectDB::get_instance(selected_id);
+	int total = 0;
+	if (obj != nullptr) {
+		List<MethodInfo> signals;
+		obj->get_signal_list(&signals);
+		for (const MethodInfo &sig : signals) {
+			List<Connection> conns;
+			obj->get_signal_connection_list(sig.name, &conns);
+			for (const Connection &c : conns) {
+				// Match ConnectionsDock: only scene-persisted connections.
+				if (c.flags & CONNECT_PERSIST) {
+					total++;
+				}
+			}
+		}
+	}
+	if (total > 0) {
+		set_title(TTR("Signals") + " (" + itos(total) + ")");
+	} else {
+		set_title(TTR("Signals"));
+	}
 }
 
 void SignalsDock::set_object(Object *p_object) {
 	connections->set_object(p_object);
+	selected_id = p_object ? p_object->get_instance_id() : ObjectID();
+	if (!history_connected) {
+		// Connects/disconnects go through undo_redo; recount then too.
+		EditorUndoRedoManager::get_singleton()->connect(SNAME("history_changed"), callable_mp(this, &SignalsDock::_update_title));
+		history_connected = true;
+	}
+	_update_title();
 }
 
 SignalsDock::SignalsDock() {
 	singleton = this;
 	set_name(TTRC("Signals"));
+	set_layout_key("Signals");
 	set_icon_name("Signals");
 	set_dock_shortcut(ED_SHORTCUT_AND_COMMAND("docks/open_signals", TTRC("Open Signals Dock")));
 	set_default_slot(EditorDock::DOCK_SLOT_RIGHT_UL);

@@ -991,13 +991,22 @@ void EditorNode::_notification(int p_what) {
 
 		case NOTIFICATION_READY: {
 			// Store the default order of bottom docks. It can only be determined dynamically.
-			PackedStringArray bottom_docks;
-			bottom_docks.reserve_exact(bottom_panel->get_tab_count());
-			for (int i = 0; i < bottom_panel->get_tab_count(); i++) {
-				EditorDock *dock = Object::cast_to<EditorDock>(bottom_panel->get_tab_control(i));
-				bottom_docks.append(dock->get_effective_layout_key());
-			}
+			// Crete: snapshot the canonical order, so Editor > Default Layout restores it.
+			PackedStringArray bottom_docks = _crete_sorted_bottom_keys();
 			default_layout->set_value("docks", "dock_9", String(",").join(bottom_docks));
+			if (!FileAccess::exists(EditorPaths::get_singleton()->get_project_settings_dir().path_join("editor_layout.cfg"))) {
+				// Crete: fresh installs (no saved layout) get the canonical order live.
+				// Existing users keep theirs: the saved layout applies later and wins.
+				for (int i = 0; i < bottom_docks.size(); i++) {
+					for (int j = 0; j < bottom_panel->get_tab_count(); j++) {
+						EditorDock *d = bottom_panel->get_dock(j);
+						if (d != nullptr && d->get_effective_layout_key() == bottom_docks[i]) {
+							d->set_tab_index(i, false);
+							break;
+						}
+					}
+				}
+			}
 
 			RenderingServer::get_singleton()->viewport_set_disable_2d(get_scene_root()->get_viewport_rid(), true);
 			RenderingServer::get_singleton()->viewport_set_environment_mode(get_viewport()->get_viewport_rid(), RSE::VIEWPORT_ENVIRONMENT_DISABLED);
@@ -6326,6 +6335,30 @@ void EditorNode::save_editor_layout_delayed() {
 	editor_layout_save_delay_timer->start();
 }
 
+PackedStringArray EditorNode::_crete_sorted_bottom_keys() const {
+	// Canonical fresh-install bottom order. Keys are contractual:
+	// Scene/FileSystem/Output are pinned via set_layout_key, the rest are
+	// stable dock names. Unknown docks keep their relative order at the end.
+	static const char *canonical[] = { "FileSystem", "Output", "GitHub", "Agents", "Debugger", "Animation", "Shader Editor", "Audio", "MSBuild", "Publish", nullptr };
+	PackedStringArray current;
+	for (int i = 0; i < bottom_panel->get_tab_count(); i++) {
+		EditorDock *d = bottom_panel->get_dock(i);
+		current.append(d ? d->get_effective_layout_key() : "?");
+	}
+	PackedStringArray sorted;
+	for (int c = 0; canonical[c] != nullptr; c++) {
+		if (current.has(canonical[c])) {
+			sorted.append(canonical[c]);
+		}
+	}
+	for (const String &k : current) {
+		if (!sorted.has(k)) {
+			sorted.append(k);
+		}
+	}
+	return sorted;
+}
+
 void EditorNode::_load_editor_layout() {
 	EditorProgress ep("loading_editor_layout", TTR("Loading editor"), 5);
 	ep.step(TTR("Loading editor layout..."), 0, true);
@@ -6350,6 +6383,15 @@ void EditorNode::_load_editor_layout() {
 			ep.step(TTR("Loading docks..."), 1, true);
 			// Initialize some default values.
 			bottom_panel->load_layout_from_config(default_layout, EDITOR_NODE_CONFIG_SECTION);
+			// Crete: fresh installs get the full canonical dock arrangement.
+			print_line("CreteDocks: dock_9=[" + String(default_layout->get_value("docks", "dock_9", "MISSING")) + "]");
+			editor_dock_manager->load_docks_from_config(default_layout, "docks", true);
+			PackedStringArray crete_bottom;
+			for (int i = 0; i < bottom_panel->get_tab_count(); i++) {
+				EditorDock *d = bottom_panel->get_dock(i);
+				crete_bottom.append(d ? d->get_effective_layout_key() + "/" + d->get_display_title() : "?");
+			}
+			print_line("CreteDocks: fresh bottom=[" + String(",").join(crete_bottom) + "]");
 		}
 	} else {
 		ep.step(TTR("Loading docks..."), 1, true);
@@ -6367,6 +6409,108 @@ void EditorNode::_load_editor_layout() {
 		ep.step(TTR("Editor layout ready."), 5, true);
 	}
 	load_editor_layout_done = true;
+	for (const String &arg : OS::get_singleton()->get_cmdline_user_args()) {
+		if (arg == "--crete-e2e-docks") {
+			callable_mp(this, &EditorNode::_crete_e2e_docks_open).call_deferred();
+			break;
+		}
+	}
+}
+
+void EditorNode::_crete_e2e_docks_open() {
+	if (!FileAccess::exists("res://main.tscn")) {
+		print_line("CreteDocks: e2e SKIP (no res://main.tscn)");
+		return;
+	}
+	if (open_scene("res://main.tscn") != OK) {
+		print_line("CreteDocks: e2e FAIL (open_scene)");
+		return;
+	}
+	Node *player = get_edited_scene()->find_child("Player", true, false);
+	if (player == nullptr) {
+		print_line("CreteDocks: e2e FAIL (no Player)");
+		return;
+	}
+	get_editor_selection()->clear();
+	get_editor_selection()->add_node(player);
+	callable_mp(this, &EditorNode::_crete_e2e_docks_step2).call_deferred();
+}
+
+void EditorNode::_crete_e2e_docks_step2() {
+	print_line("CreteDocks: hierarchy=[" + SceneTreeDock::get_singleton()->get_display_title() + "]");
+	print_line("CreteDocks: project=[" + FileSystemDock::get_singleton()->get_display_title() + "]");
+	Label *hname = Object::cast_to<Label>(InspectorDock::get_singleton()->find_child("CreteObjectHeaderName", true, false));
+	Label *hclass = Object::cast_to<Label>(InspectorDock::get_singleton()->find_child("CreteObjectHeaderClass", true, false));
+	print_line("CreteDocks: header=[" + (hname ? hname->get_text() : "?") + "|" + (hclass ? hclass->get_text() : "?") + "]");
+	Node *player = get_edited_scene()->find_child("Player", true, false);
+	print_line("CreteDocks: tags=[" + String(",").join(player->get_tags()) + "]");
+	LineEdit *filter = Object::cast_to<LineEdit>(SceneTreeDock::get_singleton()->find_child("CreteHierarchyFilter", true, false));
+	Button *add = Object::cast_to<Button>(SceneTreeDock::get_singleton()->find_child("CreteHierarchyAdd", true, false));
+	bool own_row = filter && add && filter->get_parent() != add->get_parent();
+	bool add_last = add && add->get_index() == add->get_parent()->get_child_count() - 1;
+	print_line("CreteDocks: filter=[" + (filter ? filter->get_placeholder() : "?") + "] rows=" + (own_row ? "2" : "1") + " add_last=" + (add_last ? "yes" : "no"));
+	bool hscroll = SceneTreeDock::get_singleton()->get_tree_editor()->get_scene_tree()->is_h_scroll_enabled();
+	print_line(String("CreteDocks: hscroll=") + (hscroll ? "on" : "off"));
+	bool thumbs = FileSystemDock::get_singleton()->get_file_list_display_mode() == FileSystemDock::FILE_LIST_DISPLAY_THUMBNAILS;
+	print_line(String("CreteDocks: thumbs=") + (thumbs ? "on" : "off"));
+	String probe_src = EditorPaths::get_singleton()->get_cache_dir().path_join("crete-import-probe.txt");
+	Ref<FileAccess> probe = FileAccess::open(probe_src, FileAccess::WRITE);
+	if (probe.is_valid()) {
+		probe->store_string("probe");
+		probe->flush();
+		probe.unref();
+		Vector<String> probe_files;
+		probe_files.append(probe_src);
+		bottom_panel->crete_import_files(probe_files);
+		bool landed = FileAccess::exists("res://crete-import-probe.txt");
+		print_line(String("CreteDocks: import=") + (landed ? "landed" : "MISSING"));
+		Ref<DirAccess> da = DirAccess::create(DirAccess::ACCESS_RESOURCES);
+		if (landed) {
+			da->remove("res://crete-import-probe.txt");
+		}
+		DirAccess::remove_absolute(probe_src);
+	} else {
+		print_line("CreteDocks: import=SKIP (no scratch)");
+	}
+	Node *btn = get_edited_scene()->find_child("PlayButton", true, false);
+	get_editor_selection()->clear();
+	get_editor_selection()->add_node(btn);
+	callable_mp(this, &EditorNode::_crete_e2e_docks_step3).call_deferred();
+}
+
+void EditorNode::_crete_e2e_docks_step3() {
+	Node *btn = get_edited_scene()->find_child("PlayButton", true, false);
+	print_line(String("CreteDocks: btn=") + (btn ? String(btn->get_path()) : "?"));
+	const List<Node *> &sel = get_editor_selection()->get_top_selected_node_list();
+	print_line(vformat("CreteDocks: sel=%d", sel.size()));
+	if (!sel.is_empty()) {
+		print_line(String("CreteDocks: selnode=") + String(sel.front()->get()->get_path()));
+	}
+	if (btn != nullptr) {
+		List<MethodInfo> sigs;
+		btn->get_signal_list(&sigs);
+		for (const MethodInfo &sig : sigs) {
+			List<Connection> conns;
+			btn->get_signal_connection_list(sig.name, &conns);
+			if (!conns.is_empty()) {
+				String flags;
+				for (const Connection &c : conns) {
+					flags += itos(c.flags) + ",";
+				}
+				print_line("CreteDocks: sig " + sig.name + " n=" + itos(conns.size()) + " flags=" + flags);
+			}
+		}
+	}
+	print_line("CreteDocks: signals=[" + SignalsDock::get_singleton()->get_display_title() + "]");
+	// Re-select after load settles (mirrors a real GUI click) and re-check.
+	get_editor_selection()->clear();
+	get_editor_selection()->add_node(btn);
+	callable_mp(this, &EditorNode::_crete_e2e_docks_step4).call_deferred();
+}
+
+void EditorNode::_crete_e2e_docks_step4() {
+	print_line("CreteDocks: signals2=[" + SignalsDock::get_singleton()->get_display_title() + "]");
+	print_line("CreteDocks: e2e DONE");
 }
 
 void EditorNode::_save_central_editor_layout_to_config(Ref<ConfigFile> p_config_file) {
@@ -9134,7 +9278,7 @@ EditorNode::EditorNode() {
 	filesystem_dock->connect("instantiate", callable_mp(this, &EditorNode::_instantiate_request));
 	filesystem_dock->connect("display_mode_changed", callable_mp(this, &EditorNode::_save_editor_layout));
 	get_project_settings()->connect_filesystem_dock_signals(filesystem_dock);
-	editor_dock_manager->add_dock(filesystem_dock);
+	// Crete: added to the bottom panel below, once the slot exists.
 
 	memnew(InspectorDock(editor_data));
 	editor_dock_manager->add_dock(InspectorDock::get_singleton());
@@ -9163,9 +9307,9 @@ EditorNode::EditorNode() {
 		default_layout->set_value(docks_section, "dock_3_selected_tab_idx", 0);
 	}
 	{
-		const String filesystem_key = filesystem_dock->get_effective_layout_key();
+		// Crete: Project (FileSystem) moved to the bottom panel.
 		const String history_key = history_dock->get_effective_layout_key();
-		default_layout->set_value(docks_section, "dock_4", vformat("%s,%s", filesystem_key, history_key));
+		default_layout->set_value(docks_section, "dock_4", history_key);
 		default_layout->set_value(docks_section, "dock_4_selected_tab_idx", 0);
 	}
 	{
@@ -9174,6 +9318,10 @@ EditorNode::EditorNode() {
 		default_layout->set_value(docks_section, "dock_5", vformat("%s,%s", inspector_key, signals_key));
 		default_layout->set_value(docks_section, "dock_5_selected_tab_idx", 0);
 	}
+	// Crete: dock_9 itself is snapshotted canonically at NOTIFICATION_READY
+	// (plugin dock keys can only be determined dynamically); fresh installs
+	// open the first (Project) tab.
+	default_layout->set_value(docks_section, "dock_9_selected_tab_idx", 0);
 
 	int hsplits[] = { 0, dock_hsize, -dock_hsize, 0 };
 	for (int i = 0; i < (int)std_size(hsplits); i++) {
@@ -9199,6 +9347,9 @@ EditorNode::EditorNode() {
 	center_split->add_child(bottom_panel);
 	center_split->set_dragger_visibility(SplitContainer::DRAGGER_HIDDEN);
 
+	// Crete: Project first, Console second; the rest of the canonical
+	// bottom order comes from default_layout (see _load_editor_layout).
+	editor_dock_manager->add_dock(filesystem_dock);
 	log = memnew(EditorLog);
 	editor_dock_manager->add_dock(log);
 

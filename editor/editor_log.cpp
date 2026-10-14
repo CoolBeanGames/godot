@@ -485,9 +485,12 @@ void EditorLog::_reset_message_counts() {
 }
 
 EditorLog::EditorLog() {
-	set_name(TTRC("Output"));
+	// Crete: the Output dock is the Console; the layout key stays
+	// "Output" so saved dock layouts keep working.
+	set_name(TTRC("Console"));
+	set_layout_key("Output");
 	set_icon_name("Output");
-	set_dock_shortcut(ED_SHORTCUT_AND_COMMAND("bottom_panels/toggle_output_bottom_panel", TTRC("Toggle Output Dock"), KeyModifierMask::ALT | Key::O));
+	set_dock_shortcut(ED_SHORTCUT_AND_COMMAND("bottom_panels/toggle_output_bottom_panel", TTRC("Toggle Console Dock"), KeyModifierMask::ALT | Key::O));
 	set_default_slot(EditorDock::DOCK_SLOT_BOTTOM);
 	set_available_layouts(EditorDock::DOCK_LAYOUT_HORIZONTAL | EditorDock::DOCK_LAYOUT_FLOATING);
 	set_process_shortcut_input(true);
@@ -534,7 +537,7 @@ EditorLog::EditorLog() {
 	clear_button->set_accessibility_name(TTRC("Clear Log"));
 	clear_button->set_theme_type_variation("BottomPanelButton");
 	clear_button->set_focus_mode(FOCUS_ACCESSIBILITY);
-	clear_button->set_shortcut(ED_SHORTCUT("editor/clear_output", TTRC("Clear Output"), KeyModifierMask::CMD_OR_CTRL | KeyModifierMask::ALT | Key::K));
+	clear_button->set_shortcut(ED_SHORTCUT("editor/clear_output", TTRC("Clear Console"), KeyModifierMask::CMD_OR_CTRL | KeyModifierMask::ALT | Key::K));
 	clear_button->connect(SceneStringName(pressed), callable_mp(this, &EditorLog::_clear_request));
 	bottom_hf->add_child(clear_button);
 

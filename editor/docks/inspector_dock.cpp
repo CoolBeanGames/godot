@@ -547,6 +547,7 @@ void InspectorDock::update(Object *p_object) {
 	object_selector->update_path();
 
 	current = p_object;
+	_update_object_header();
 
 	const bool is_object = p_object != nullptr;
 	const bool is_resource = is_object && p_object->is_class("Resource");
@@ -617,6 +618,41 @@ void InspectorDock::update(Object *p_object) {
 			i++;
 			I = I->next();
 		}
+	}
+}
+
+void InspectorDock::_update_object_header() {
+	if (current == nullptr || current->is_class("TextFile")) {
+		object_header->hide();
+		return;
+	}
+	object_header->show();
+
+	Ref<Texture2D> icon = EditorNode::get_singleton()->get_object_icon(current);
+	object_header_icon->set_visible(icon.is_valid());
+	object_header_icon->set_texture(icon);
+
+	Node *node = Object::cast_to<Node>(current);
+	if (node != nullptr) {
+		object_header_name->set_text(node->get_name());
+		String sub = node->get_class();
+		Ref<Script> scr = node->get_script();
+		if (scr.is_valid()) {
+			String spath = scr->get_path();
+			sub += " · " + (spath.is_empty() ? TTR("[built-in script]") : spath.get_file());
+		}
+		if (node->is_unique_name_in_owner()) {
+			sub += " · %" + node->get_name();
+		}
+		object_header_class->set_text(sub);
+	} else if (current->is_class("Resource")) {
+		Resource *res = Object::cast_to<Resource>(current);
+		String rpath = res->get_path();
+		object_header_name->set_text(rpath.is_empty() ? res->get_class() : rpath.get_file());
+		object_header_class->set_text(res->get_class());
+	} else {
+		object_header_name->set_text(current->get_class());
+		object_header_class->set_text(String());
 	}
 }
 
@@ -755,7 +791,7 @@ InspectorDock::InspectorDock(EditorData &p_editor_data) {
 	resource_extra_button->get_popup()->add_shortcut(ED_SHORTCUT("property_editor/copy_resource", TTRC("Copy Resource")), RESOURCE_COPY);
 	resource_extra_button->get_popup()->set_item_disabled(1, true);
 	resource_extra_button->get_popup()->add_separator();
-	resource_extra_button->get_popup()->add_shortcut(ED_SHORTCUT("property_editor/show_in_filesystem", TTRC("Show in FileSystem")), RESOURCE_SHOW_IN_FILESYSTEM);
+	resource_extra_button->get_popup()->add_shortcut(ED_SHORTCUT("property_editor/show_in_filesystem", TTRC("Show in Project")), RESOURCE_SHOW_IN_FILESYSTEM);
 	resource_extra_button->get_popup()->add_shortcut(ED_SHORTCUT("property_editor/unref_resource", TTRC("Make Resource Built-In")), RESOURCE_MAKE_BUILT_IN);
 	resource_extra_button->get_popup()->set_item_disabled(3, true);
 	resource_extra_button->get_popup()->connect(SceneStringName(id_pressed), callable_mp(this, &InspectorDock::_menu_option));
@@ -798,6 +834,33 @@ InspectorDock::InspectorDock(EditorData &p_editor_data) {
 	open_docs_button->set_shortcut(ED_SHORTCUT("property_editor/open_help", TTRC("Open Documentation")));
 	subresource_hb->add_child(open_docs_button);
 	open_docs_button->connect(SceneStringName(pressed), callable_mp(this, &InspectorDock::_menu_option).bind(OBJECT_REQUEST_HELP));
+
+	// Crete: Unity-style edited-object header (name, class, script).
+	object_header = memnew(HBoxContainer);
+	object_header->add_theme_constant_override("separation", 6);
+	main_vb->add_child(object_header);
+
+	object_header_icon = memnew(TextureRect);
+	object_header_icon->set_custom_minimum_size(Size2(16, 16) * EDSCALE);
+	object_header_icon->set_expand_mode(TextureRect::EXPAND_IGNORE_SIZE);
+	object_header_icon->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
+	object_header->add_child(object_header_icon);
+
+	VBoxContainer *object_header_vb = memnew(VBoxContainer);
+	object_header_vb->add_theme_constant_override("separation", 0);
+	object_header_vb->set_h_size_flags(Control::SIZE_EXPAND_FILL);
+	object_header->add_child(object_header_vb);
+
+	object_header_name = memnew(Label);
+	object_header_name->set_name("CreteObjectHeaderName");
+	object_header_name->set_clip_text(true);
+	object_header_vb->add_child(object_header_name);
+
+	object_header_class = memnew(Label);
+	object_header_class->set_name("CreteObjectHeaderClass");
+	object_header_class->set_clip_text(true);
+	object_header_vb->add_child(object_header_class);
+	object_header->hide();
 
 	new_resource_dialog = memnew(CreateDialog);
 	EditorNode::get_singleton()->get_gui_base()->add_child(new_resource_dialog);

@@ -498,3 +498,61 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
   x 1390-1450, y 38-52, not where it looks.
 - Results: build DONE; full suite **1387 passed, 0 failed, 3
   skipped; 356,627 assertions. Status: SUCCESS.**
+
+## Step 17 (P3D): Hierarchy / Project / Console docks (DONE)
+
+- Hierarchy (`scene_tree_dock`): tab renamed Scene -> Hierarchy
+  (layout key pinned to "Scene"); toolbar split into a buttons
+  row (instance/scripts/menu + Create "+" at the right) and a
+  full-width filter row (`Filter nodes… (t:Texture, g:Group)`);
+  tree never h-scrolls, long names ellipsis (TreeItem default);
+  tab shows the edited scene (`Hierarchy — main.tscn`).
+- Project (`filesystem_dock`): moved to the bottom panel, first
+  tab (layout key pinned to "FileSystem"); tab shows the browsed
+  path (`Project — res://`); horizontal mode already renders the
+  thumbnail hsplit, but NOTIFICATION_READY forced LIST mode —
+  fixed to respect the layout (`thumbs=on`). Import dock stays
+  tabbed with Hierarchy (functional reimport home); History stays
+  lower-left.
+- Console (`editor_log`): Output -> Console (key pinned to
+  "Output"); shortcut/shortcut-text paths unchanged.
+- Canonical fresh bottom order: Project, Console, GitHub, Agents,
+  Debugger, Animation, Shader Editor, Audio, MSBuild, Publish.
+  Upstream NOTIFICATION_READY snapshots add-order into
+  `default_layout` dock_9, so the snapshot is now
+  canonical-sorted (`_crete_sorted_bottom_keys`) and fresh
+  installs (no `editor_layout.cfg`) get the order applied live;
+  saved layouts still win for existing users. Fresh installs
+  also load `default_layout` fully (side slots + Project
+  selected). No-config runs print `CreteDocks: fresh bottom=[…]`.
+- Inspector (`inspector_dock`): Unity-style object header (icon +
+  name + `Class · script.cs · %Unique`) above the search box,
+  updated in `update()`; tags row from Step 8 already sits on
+  top; script [Export]s already group (stock). `Meta` tab
+  deliberately skipped: node metadata is already fully edited
+  inline in the Inspector (section + Add Metadata dialog) — a
+  second editor would duplicate/conflict.
+- Signals (`signals_dock`): tab shows persist-connection count
+  (`Signals (1)`, text-only — no emoji: font coverage), updated
+  on selection + undo-redo history (connect/disconnect/undo).
+  Counts only CONNECT_PERSIST like ConnectionsDock.
+- Bottom-right `+ Import…` button: file dialog (multi) copies
+  into the Project's current folder (skips existing with a
+  warning) + filesystem rescan. Global bottom "filter" skipped:
+  every tab keeps its own filter.
+- E2E: `-- --crete-e2e-docks` headless run opens `res://main.tscn`
+  (fixture-only, SKIP-guarded), selects Player then PlayButton,
+  and prints hierarchy/project/header/tags/filter/rows/add_last/
+  hscroll/thumbs/import/signals markers, exit 0. Badge reads
+  after settle+reselect (scene connections land an idle after
+  open; every real click recounts anyway).
+- GUI proof (fresh layout): Hierarchy tabs/filter/`+`, History,
+  canonical bottom tabs, Project tree+files, `+ Import…`
+  (`crete-step17a*`). Pixel shots of thumbnails/tree/header/
+  badge deferred: the machine's owner returned mid-step (stock
+  Godot + OBS + browser active), so window-fighting screenshots
+  were suspended in favor of headless E2E; `-OpenScene` +
+  double-click-file support added to `crete-shot.ps1` for the
+  follow-up.
+- Results: build DONE; full suite **1387 passed, 0 failed, 3
+  skipped; 356,627 assertions. Status: SUCCESS.**
