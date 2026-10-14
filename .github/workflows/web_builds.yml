@@ -17,7 +17,8 @@ on:
 
 env:
   # Only place where we should specify flags.
-  SCONS_FLAGS: warnings=extra werror=yes strict=yes verbose=yes debug_symbols=no
+  SCONS_FLAGS: warnings=extra werror=yes strict=yes verbose=yes debug_symbols=no use_closure_compiler=yes
+  EM_VERSION: 4.0.11
 
 concurrency:
   group: ci-${{ github.ref }}-web
@@ -59,12 +60,15 @@ jobs:
       - name: Setup Python and SCons
         uses: ./.github/actions/godot-deps
 
-      - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@v16
         with:
-          # Godot requires Emscripten >= 4.0.0 (platform/web/detect.py).
-          version: 4.0.10
-          actions-cache-folder: emsdk-cache
+          version: ${{ env.EM_VERSION }}
+          no-cache: true
+
+      - name: Verify Emscripten setup
+        run: |
+          emcc -v
 
       - name: Steamworks SDK (optional)
         id: steam

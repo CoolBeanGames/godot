@@ -609,9 +609,10 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
 - `windows_builds.yml` + `web_builds.yml`: were env-only stubs
   with no jobs; replaced with real jobs mirroring Linux
   (Windows editor on `windows-2022` adds the live-OS-keychain
-  publish-core tests; Web builds release+debug wasm templates
-  via `mymindstorm/setup-emsdk@v14` pinned at 4.0.10, no
-  editor job).
+  publish-core tests plus the upstream D3D12/ANGLE/AccessKit
+  SDK steps; Web builds release+debug wasm templates via the
+  official `emscripten-core/setup-emsdk@v16` pinned at 4.0.11
+  (upstream 4.6 pin) with closure compiler, no editor job).
 - `runner.yml`: PR/push flow calls Linux + Windows with
   `changed-files` + `secrets: inherit` (templates default off,
   so PR CI stays editor-only and fast); the Web call is removed
