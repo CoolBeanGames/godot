@@ -288,4 +288,3 @@ jobs:
       - name: Smoke test
         run: |
           ${{ matrix.bin }} --version
-
