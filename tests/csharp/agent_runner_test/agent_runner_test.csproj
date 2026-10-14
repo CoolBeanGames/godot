@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>agent_runner_test</AssemblyName>
+  </PropertyGroup>
+
+  <!-- Compile the shipped core files directly: the tests verify the real code. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\modules\mono\editor\GodotTools\GodotTools\Agents\AgentProvider.cs" />
+    <Compile Include="..\..\..\modules\mono\editor\GodotTools\GodotTools\Agents\AgentPrompt.cs" />
+    <Compile Include="..\..\..\modules\mono\editor\GodotTools\GodotTools\Agents\AgentRunner.cs" />
+    <Compile Include="..\..\..\modules\mono\editor\GodotTools\GodotTools\Agents\AgentChangeTracker.cs" />
+  </ItemGroup>
+
+</Project>

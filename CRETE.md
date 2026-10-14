@@ -275,3 +275,47 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
 - Pre-existing note: headless editor open prints
   `WARNING: Property not found: 'xr/openxr/enabled'` (Step 3
   leftover), unrelated to this step.
+
+## Step 11: Agents bottom dock (external CLIs, C#) (DONE)
+
+- New `GodotTools/Agents/`, split into a pure BCL core (unit-tested
+  outside the engine) and a thin Godot-coupled dock:
+  - `AgentProvider.cs`: muse / claude / codex / gemini, one pattern.
+    Flags confirmed at implementation time: `muse exec` (`muse exec
+    --help` on this machine), `claude -p`, `codex exec`, `gemini -p`
+    (vendor docs). Prompt travels on argv for all four.
+  - `AgentPrompt.cs`: task + open-script/selection + scene dump + git
+    status assembly with per-section caps and a 24k total cap (Windows
+    argv limits), truncation markers throughout.
+  - `AgentRunner.cs`: async run with live line streaming, timeout kill
+    (exit 124, `TimedOut` flag), cancellation, exit passthrough, and
+    `cmd /c` wrapping for .cmd/.bat CLIs (required: `muse` here is a
+    `.cmd`, which .NET cannot spawn directly).
+  - `AgentChangeTracker.cs`: SHA-256 snapshot/diff of project text
+    files (skips `.git/.godot/bin/obj/...`, ignores non-project
+    extensions), so changed files are reported with or without git.
+  - `AgentContext.cs`: gathers open script + selection (ScriptEditor
+    -> TextEdit), edited-scene dump (500-node cap, attached-script
+    paths), git status head. Build-error context deliberately absent:
+    the problems list is a private Tree with no accessor, and the
+    agent has shell access to run `dotnet build` itself.
+  - `CreteAgentsDock.cs`: provider picker with PATH auto-detect,
+    multi-line task, script/scene/git toggles, timeout spinner
+    (`crete/agents/timeout_minutes`, default 10), Run/Cancel,
+    streaming log, changed-files list + diff view, revert-selected
+    (via `GitCli` when the project is a repo).
+- Standalone tests: `tests/csharp/agent_runner_test/` (dotnet console
+  project compiling the real core files): **28/28 pass** — provider
+  argv shapes, prompt sections + caps, `.cmd` run/capture/streaming,
+  exit passthrough, missing-exe 127, timeout kill (3.3 s) keeping
+  pre-kill output, cancel kill, snapshot add/modify/delete with
+  skips. Run: `dotnet run --project
+  engine/tests/csharp/agent_runner_test`.
+- E2E: headless open prints
+  `CreteAgents: detected=[muse] missing=[claude,codex,gemini]` (this
+  machine), exit 0. Live check: real `muse exec --provider echo`
+  returns exit 0 with the answer on stdout, proving the argv shape.
+- C# note: log views are `RichTextLabel` with `ScrollFollowing`
+  (see `BuildOutputView`); `TextEdit` has no `ScrollToLine`.
+- Results: build DONE; full suite **1385 passed, 0 failed, 3
+  skipped; 356,585 assertions. Status: SUCCESS.**

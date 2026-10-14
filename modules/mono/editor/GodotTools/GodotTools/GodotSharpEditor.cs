@@ -590,6 +590,9 @@ namespace GodotTools
             // Crete: built-in GitHub bottom dock (git CLI, no libgit).
             AddDock(new GitHub.CreteGitHubDock());
 
+            // Crete: built-in Agents bottom dock (external agent CLIs).
+            AddDock(new Agents.CreteAgentsDock());
+
             AddChild(new HotReloadAssemblyWatcher { Name = "HotReloadAssemblyWatcher" });
 
             _menuPopup = new PopupMenu
