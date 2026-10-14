@@ -352,3 +352,53 @@ Current flags are stock plus .NET plus tests. Each removal step appends its
 - Results: build DONE; focused 2/2 (13 assertions); full suite
   **1387 passed, 0 failed, 3 skipped; 356,627 assertions. Status:
   SUCCESS.**
+
+## Step 13: Publish dock (preset build + itch/butler + Steam/steamcmd) (DONE)
+
+- New `GodotTools/Publish/`, pure core + thin dock (ships as a bottom
+  dock; P3 owns layout and will place it in the center tab strip):
+  - `ExportPresetsFile.cs`: minimal `export_presets.cfg` reader
+    (`[preset.N]` name/platform/export_path) + platform->itch-channel
+    defaults. Pure BCL.
+  - `SteamVdf.cs`: SteamPipe `appbuild` VDF generator (appid, desc,
+    content/buildoutput dirs, depot, file exclusion). Pure BCL.
+  - `PublishTools.cs`: machine-local tool cache
+    (`%LOCALAPPDATA%/Crete/tools` etc.); PATH preferred, fetch on
+    demand with manual-install fallback errors. butler +
+    steamcmd URLs, zip/tar.gz extraction, unix chmod. Pure BCL.
+  - `PublishKeychain.cs`: Windows Credential Manager (P/Invoke),
+    macOS `security`, Linux `secret-tool`. Secrets (itch API key,
+    Steam user/pass) live here, never in the project. Pure BCL.
+  - `CretePublishDock.cs`: preset picker + headless self-export
+    (`--export-release`, 30-min cap, templates-missing advisory),
+    itch section (user/game/channel persisted to ProjectSettings,
+    keychain API key, `butler push dir user/game:channel` with
+    `BUTLER_API_KEY` env), Steam section (real GodotSteam keys
+    `steam/initialization/app_data/*` + init flag, depot id, VDF
+    written under `.godot/`, steamcmd `+login +run_app_build +quit`,
+    partner-dashboard link, stub-build notice via
+    `Steam.IsCreteStub()`). All subprocesses stream through
+    `Agents.AgentRunner` (extended with optional env passthrough).
+- Achievements/cloud saves live on the Steam partner site (GodotSteam
+  reads them from Steam, not settings), so the tab links the
+  dashboard instead of editing them; the "in Project Settings" half
+  is the AppID family + init flags, which SDK builds consume.
+- Fetch lesson: `broth.itch.ovh` is RETIRED (NXDOMAIN, confirmed via
+  itch.io admin notice); canonical butler source is
+  `broth.itch.zone/butler/...`. No GitHub-release fallback exists.
+  steamcmd: `steamcdn-a.akamaihd.net/.../steamcmd.zip` (+`_linux`
+  tarball; no macOS build — tab errors honestly there).
+- Tests: `tests/csharp/publish_core_test/` **32/32** (preset parse,
+  VDF + escaping, URLs, zip/tar.gz nested extraction, live Windows
+  keychain roundtrip, `Which`; live-gated: real butler v15.32.0
+  fetched + runs, cached second call, real steamcmd fetched).
+  Agent core grew to **29/29** (env passthrough).
+- E2E: headless open with a preset file prints
+  `presets=1 butler=<cached> steamcmd=<cached> steam_stub=True`,
+  exit 0. Live proofs: `butler push --help` shape, steamcmd
+  self-update + clean quit (exit 0), and the dock's exact export
+  command resolving the preset to the templates-missing terminal
+  state (templates are user-installed; the dock warns).
+- C# note: qualify `System.Environment` (Godot.Environment collides).
+- Results: build DONE; full suite **1387 passed, 0 failed, 3
+  skipped; 356,627 assertions. Status: SUCCESS.**

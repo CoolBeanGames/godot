@@ -593,6 +593,9 @@ namespace GodotTools
             // Crete: built-in Agents bottom dock (external agent CLIs).
             AddDock(new Agents.CreteAgentsDock());
 
+            // Crete: built-in Publish bottom dock (itch.io + Steam uploads).
+            AddDock(new Publish.CretePublishDock());
+
             AddChild(new HotReloadAssemblyWatcher { Name = "HotReloadAssemblyWatcher" });
 
             _menuPopup = new PopupMenu

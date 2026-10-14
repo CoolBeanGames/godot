@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>publish_core_test</AssemblyName>
+  </PropertyGroup>
+
+  <!-- Compile the shipped core files directly: the tests verify the real code. -->
+  <ItemGroup>
+    <Compile Include="..\..\..\modules\mono\editor\GodotTools\GodotTools\Publish\ExportPresetsFile.cs" />
+    <Compile Include="..\..\..\modules\mono\editor\GodotTools\GodotTools\Publish\SteamVdf.cs" />
+    <Compile Include="..\..\..\modules\mono\editor\GodotTools\GodotTools\Publish\PublishTools.cs" />
+    <Compile Include="..\..\..\modules\mono\editor\GodotTools\GodotTools\Publish\PublishKeychain.cs" />
+  </ItemGroup>
+
+</Project>

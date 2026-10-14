@@ -21,7 +21,8 @@ namespace GodotTools.Agents
     {
         public static async Task<AgentRunResult> RunAsync(string cliPath, string[] args,
             string workingDir, TimeSpan timeout, CancellationToken cancel,
-            Action<string>? onStdout = null, Action<string>? onStderr = null)
+            Action<string>? onStdout = null, Action<string>? onStderr = null,
+            System.Collections.Generic.IReadOnlyDictionary<string, string>? env = null)
         {
             var stdout = new StringBuilder();
             var stderr = new StringBuilder();
@@ -52,6 +53,11 @@ namespace GodotTools.Agents
             }
             foreach (string arg in args)
                 startInfo.ArgumentList.Add(arg);
+            if (env != null)
+            {
+                foreach (var kv in env)
+                    startInfo.Environment[kv.Key] = kv.Value;
+            }
 
             try
             {

@@ -131,6 +131,13 @@ static class AgentCoreTests
                 root, TimeSpan.FromSeconds(10), CancellationToken.None);
             Check(!missing.Ok && missing.ExitCode == 127, "runner missing exe -> 127");
 
+            string envProbe = Path.Combine(root, "env.cmd");
+            File.WriteAllText(envProbe, "@echo off\r\necho MARKER=%CRETE_TEST_MARKER%\r\n");
+            var env = new Dictionary<string, string> { ["CRETE_TEST_MARKER"] = "sentinel42" };
+            AgentRunResult re = await AgentRunner.RunAsync(envProbe, Array.Empty<string>(),
+                root, TimeSpan.FromSeconds(30), CancellationToken.None, null, null, env);
+            Check(re.Ok && re.Stdout.Contains("MARKER=sentinel42"), "runner env passthrough");
+
             // Sleep ~25s via ping; timeout must kill it fast.
             string sleep = Path.Combine(root, "sleep.cmd");
             File.WriteAllText(sleep, "@echo off\r\necho SLEEPING\r\nping -n 25 127.0.0.1 >nul\r\necho WOKE\r\n");
